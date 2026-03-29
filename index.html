@@ -402,10 +402,9 @@ input[type=range]:disabled{opacity:.35;pointer-events:none;}
 /* ── CANVAS ── */
 #canvas{
   display:block;
-  width:100%!important;
-  height:100%!important;
   position:absolute;
   top:0;left:0;
+  /* Three.js sets canvas width/height — no CSS override here */
 }
 
 body.wand #canvas,body.boxsel #canvas{cursor:crosshair;}
@@ -1424,19 +1423,19 @@ const partMoveStarts=new Map();   // mesh.position at drag start
 const vp=document.getElementById('viewport');
 function resize(){
   const w=vp.clientWidth||window.innerWidth;
-  const h=vp.clientHeight||window.innerHeight-50; // fallback minus toolbar height
-  renderer.setSize(w,h,false); // false = don't set canvas.style.width/height (CSS controls that)
+  const h=(vp.clientHeight||window.innerHeight)-50;
+  if(w<1||h<1) return; // don't set if container not yet laid out
+  renderer.setSize(w,h); // let Three.js set canvas width/height attributes
+  // also enforce via style for safety
+  canvas.style.width=w+'px';
+  canvas.style.height=h+'px';
   camera.aspect=w/h;
   camera.updateProjectionMatrix();
 }
+// Fire at multiple points to guarantee it catches the right moment
 window.addEventListener('resize',resize);
-// Fire after layout is complete so clientWidth/Height are non-zero
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',resize);
-} else {
-  resize();
-}
-requestAnimationFrame(resize); // second pass in case of late reflow
+window.addEventListener('load',resize); // after all resources loaded
+document.addEventListener('DOMContentLoaded',()=>{ resize(); requestAnimationFrame(resize); });
 
 // ══════════════════════════════════════════════
 // CAMERA
@@ -2500,6 +2499,7 @@ async function loadSTL(file){
   document.getElementById('rpanel').classList.add('on');
   document.getElementById('lpanel').classList.remove('collapsed');
   document.getElementById('btn-panel').classList.add('active');
+  resize(); // ensure canvas is correctly sized when the model first renders
   setStatus(`${file.name}  ·  ${meshes.length} part${meshes.length>1?'s':''}  ·  ${F.toLocaleString()} tri`);
   updateWarn();
   ld.classList.remove('on');
