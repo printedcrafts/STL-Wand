@@ -399,6 +399,15 @@ input[type=range]:disabled{opacity:.35;pointer-events:none;}
 #status{position:absolute;bottom:0;left:0;right:0;height:26px;background:rgba(7,7,15,.97);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:16px;font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);z-index:10;}
 #s-mode{color:var(--accent);font-weight:bold;letter-spacing:.05em;}
 
+/* ── CANVAS ── */
+#canvas{
+  display:block;
+  width:100%!important;
+  height:100%!important;
+  position:absolute;
+  top:0;left:0;
+}
+
 body.wand #canvas,body.boxsel #canvas{cursor:crosshair;}
 body.move #canvas{cursor:grab;}
 body.move.dragging #canvas{cursor:grabbing;}
@@ -973,7 +982,7 @@ body.move.dragging #canvas{cursor:grabbing;}
   </div>
 
   <!-- VIEWPORT -->
-  <div id="viewport" style="flex:1;position:relative;overflow:hidden;">
+  <div id="viewport" style="flex:1;position:relative;overflow:hidden;min-height:0;height:100%;">
     <canvas id="canvas"></canvas>
 
     <div id="dropzone">
@@ -1413,8 +1422,21 @@ const partMoveStarts=new Map();   // mesh.position at drag start
 // RESIZE
 // ══════════════════════════════════════════════
 const vp=document.getElementById('viewport');
-function resize(){const w=vp.clientWidth,h=vp.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
-window.addEventListener('resize',resize);resize();
+function resize(){
+  const w=vp.clientWidth||window.innerWidth;
+  const h=vp.clientHeight||window.innerHeight-50; // fallback minus toolbar height
+  renderer.setSize(w,h,false); // false = don't set canvas.style.width/height (CSS controls that)
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize',resize);
+// Fire after layout is complete so clientWidth/Height are non-zero
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',resize);
+} else {
+  resize();
+}
+requestAnimationFrame(resize); // second pass in case of late reflow
 
 // ══════════════════════════════════════════════
 // CAMERA
