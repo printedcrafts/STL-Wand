@@ -1,0 +1,4148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STL Wand Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#07070f;--panel:#0d0d1a;
+  --border:#1c1c34;--border-hi:#2c2c52;
+  --accent:#4af8ff;--accent-glow:rgba(74,248,255,.12);
+  --sel:#ff6600;--hov:#00ffc8;--danger:#ff3355;--warn:#ffcc00;
+  --export:#a78bfa;--export-glow:rgba(167,139,250,.12);
+  --explode:#34d399;--explode-glow:rgba(52,211,153,.10);
+  --orient:#f472b6;--orient-glow:rgba(244,114,182,.10);
+  --ax-x:#ff6b6b;--ax-y:#69ff8a;--ax-z:#6ab0ff;
+  --wand:#c084fc;--wand-glow:rgba(192,132,252,.12);
+  --move:#fb923c;--move-glow:rgba(251,146,60,.12);
+  --ai:#38bdf8;--ai-glow:rgba(56,189,248,.12);--ai-dark:#0c1a24;
+  --text:#b8c0dc;--text-dim:#7880a8;--text-hi:#e8eeff;--text-label:#9aa0c0;
+  --ff-ui:'Rajdhani',sans-serif;--ff-mono:'Share Tech Mono',monospace;
+  --lpw:258px;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--ff-ui);overflow:hidden;height:100vh;}
+
+/* ── TOOLBAR ── */
+#toolbar{height:50px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:5px;z-index:20;flex-shrink:0;}
+.logo{font-family:var(--ff-mono);font-size:13px;color:var(--accent);letter-spacing:.12em;margin-right:8px;user-select:none;}
+.sep{width:1px;height:26px;background:var(--border-hi);margin:0 4px;flex-shrink:0;}
+.tbtn{height:32px;padding:0 10px;background:transparent;border:1px solid var(--border-hi);color:var(--text);font-family:var(--ff-ui);font-size:12px;font-weight:700;letter-spacing:.07em;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap;clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%);flex-shrink:0;}
+.tbtn svg{width:13px;height:13px;flex-shrink:0;}
+.tbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+.tbtn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+.tbtn.warn-active{border-color:var(--warn)!important;color:var(--warn)!important;background:rgba(255,204,0,.1)!important;}
+.tbtn.danger{border-color:#2a0d18;color:var(--danger);}
+.tbtn.danger:hover{background:rgba(255,51,85,.1);border-color:var(--danger);}
+.tbtn.export-btn{border-color:#3d2f6b;color:var(--export);}
+.tbtn.export-btn:hover{border-color:var(--export);background:var(--export-glow);}
+.tbtn:disabled{opacity:.25;pointer-events:none;}
+.stats{margin-left:auto;display:flex;gap:14px;flex-shrink:0;}
+.stat{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
+.stat-v{font-family:var(--ff-mono);font-size:14px;color:var(--text-hi);line-height:1;}
+.stat-l{font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);letter-spacing:.08em;}
+
+/* ── LAYOUT ── */
+#main{height:calc(100vh - 50px);display:flex;overflow:hidden;}
+
+/* ── LEFT PANEL ── */
+#lpanel{width:var(--lpw);height:100%;background:rgba(10,10,20,.97);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;z-index:8;transition:margin-left .2s ease;overflow-y:auto;overflow-x:hidden;}
+#lpanel::-webkit-scrollbar{width:3px;}
+#lpanel::-webkit-scrollbar-thumb{background:var(--border-hi);}
+#lpanel.collapsed{margin-left:calc(-1 * var(--lpw));}
+.lp-section{border-bottom:1px solid var(--border);padding:10px 12px;flex-shrink:0;}
+.lp-title{font-family:var(--ff-mono);font-size:10px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.lp-title em{font-style:normal;color:var(--text-dim);}
+.lp-title.wand-title{color:var(--wand);}
+
+/* wand metric buttons */
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;}
+.metric-btn{
+  height:32px;background:transparent;border:1px solid var(--border-hi);
+  color:var(--text-dim);font-family:var(--ff-mono);font-size:10px;letter-spacing:.05em;
+  cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1px;padding:2px 4px;
+}
+.metric-btn span.metric-icon{font-size:12px;line-height:1;}
+.metric-btn span.metric-name{font-size:10px;letter-spacing:.06em;}
+.metric-btn.active{border-color:var(--wand);color:var(--wand);background:var(--wand-glow);}
+.metric-btn:hover:not(.active){color:var(--text);background:rgba(255,255,255,.03);}
+/* tolerance slider purple thumb */
+input[type=range].wand-sl::-webkit-slider-thumb{background:var(--wand);}
+/* tolerance preview bar */
+#wand-preview-bar{
+  height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:4px;
+  position:relative;
+}
+#wand-preview-fill{height:100%;background:linear-gradient(to right,var(--wand),#818cf8);width:0%;transition:width .15s;}
+.wand-tol-row{display:flex;justify-content:space-between;font-family:var(--ff-mono);font-size:10px;margin-bottom:3px;}
+.wand-tol-row span{color:var(--text-dim);}
+.wand-tol-row strong{color:var(--wand);}
+/* contiguous toggle */
+.contiguous-row{display:flex;align-items:center;gap:6px;margin-top:8px;margin-bottom:2px;cursor:pointer;user-select:none;}
+.contiguous-row input[type=checkbox]{accent-color:var(--wand);cursor:pointer;}
+.contiguous-row label{font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);cursor:pointer;}
+.lp-title.explode-title{color:var(--explode);}
+.lp-title.export-title{color:var(--export);}
+
+/* method toggles */
+.seg-methods{display:flex;gap:4px;margin-bottom:8px;}
+.meth-btn{flex:1;height:26px;background:transparent;border:1px solid var(--border-hi);color:var(--text-label);font-family:var(--ff-mono);font-size:10px;letter-spacing:.06em;cursor:pointer;transition:all .15s;}
+.meth-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+.meth-btn.orient-active{border-color:var(--orient)!important;color:var(--orient)!important;background:var(--orient-glow)!important;}
+.meth-btn:hover:not(.active):not(.orient-active){color:var(--text);background:rgba(255,255,255,.03);}
+
+/* sliders */
+.slider-row{margin-bottom:7px;}
+.slider-label{display:flex;justify-content:space-between;font-family:var(--ff-mono);font-size:10px;margin-bottom:3px;}
+.slider-label span{color:var(--text-label);}
+.slider-label strong{color:var(--accent);}
+.slider-label strong.ex{color:var(--explode);}
+input[type=range]{width:100%;height:3px;-webkit-appearance:none;appearance:none;background:var(--border-hi);border-radius:2px;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;}
+input[type=range].warn-sl::-webkit-slider-thumb{background:var(--warn);}
+input[type=range].ex-sl::-webkit-slider-thumb{background:var(--explode);}
+input[type=range].ex-sl{background:linear-gradient(to right,var(--explode) 0%,var(--border-hi) 0%);}
+input[type=range].rx-sl::-webkit-slider-thumb{background:var(--ax-x);}
+input[type=range].ry-sl::-webkit-slider-thumb{background:var(--ax-y);}
+input[type=range].rz-sl::-webkit-slider-thumb{background:var(--ax-z);}
+input[type=range]:disabled{opacity:.35;pointer-events:none;}
+
+/* action buttons */
+.action-btn{width:100%;height:28px;background:var(--accent-glow);border:1px solid var(--accent);color:var(--accent);font-family:var(--ff-mono);font-size:10px;letter-spacing:.08em;cursor:pointer;transition:all .15s;margin-top:4px;}
+.action-btn:hover{background:rgba(74,248,255,.2);}
+.action-btn.explode{background:var(--explode-glow);border-color:var(--explode);color:var(--explode);}
+.action-btn.explode:hover{background:rgba(52,211,153,.2);}
+.action-btn.export-all{background:var(--export-glow);border-color:var(--export);color:var(--export);}
+.action-btn.export-all:hover{background:rgba(167,139,250,.2);}
+.action-btn.export-sel{background:rgba(255,102,0,.08);border-color:#7a3a00;color:#ff9944;}
+.action-btn.export-sel:hover{background:rgba(255,102,0,.15);border-color:var(--sel);}
+.action-btn.bake-btn{background:var(--orient-glow);border-color:var(--orient);color:var(--orient);}
+.action-btn.bake-btn:hover{background:rgba(244,114,182,.2);}
+.action-btn:disabled{opacity:.25;pointer-events:none;}
+
+/* two-col buttons */
+.btn-row{display:flex;gap:4px;margin-top:4px;}
+.half-btn{flex:1;height:26px;background:transparent;border:1px solid var(--border-hi);color:var(--text-dim);font-family:var(--ff-mono);font-size:10px;letter-spacing:.05em;cursor:pointer;transition:all .15s;}
+.half-btn:hover{border-color:var(--accent);color:var(--accent);}
+.half-btn:disabled{opacity:.25;pointer-events:none;}
+
+/* ── ORIENT PANEL STYLES ── */
+.orient-target-row{display:flex;gap:4px;margin-bottom:10px;}
+.orient-target-row .meth-btn.orient-active{border-color:var(--orient);color:var(--orient);background:var(--orient-glow);}
+
+.ax-block{margin-bottom:9px;}
+.ax-header{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.ax-tag{
+  width:18px;height:18px;border-radius:2px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--ff-mono);font-size:10px;font-weight:700;flex-shrink:0;
+}
+.ax-tag.x{background:rgba(255,107,107,.18);color:var(--ax-x);border:1px solid rgba(255,107,107,.3);}
+.ax-tag.y{background:rgba(105,255,138,.15);color:var(--ax-y);border:1px solid rgba(105,255,138,.25);}
+.ax-tag.z{background:rgba(106,176,255,.15);color:var(--ax-z);border:1px solid rgba(106,176,255,.25);}
+.ax-slider-num{display:flex;align-items:center;gap:5px;flex:1;}
+.ax-slider-num input[type=range]{flex:1;}
+.ax-num{
+  width:46px;height:20px;background:rgba(255,255,255,.04);border:1px solid var(--border-hi);
+  color:var(--text-hi);font-family:var(--ff-mono);font-size:10px;text-align:center;
+  outline:none;padding:0 2px;flex-shrink:0;
+}
+.ax-num:focus{border-color:var(--orient);}
+.ax-num:disabled{opacity:.35;pointer-events:none;}
+.ax-deg{font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);flex-shrink:0;}
+.ax-quick{display:flex;gap:3px;margin-top:3px;}
+.ax-q{
+  flex:1;height:22px;background:transparent;border:1px solid var(--border-hi);
+  color:var(--text-dim);font-family:var(--ff-mono);font-size:10px;letter-spacing:.04em;
+  cursor:pointer;transition:all .12s;padding:0;
+}
+.ax-q:hover:not(:disabled){background:rgba(244,114,182,.1);border-color:var(--orient);color:var(--orient);}
+.ax-q:disabled{opacity:.25;pointer-events:none;}
+
+.orient-divider{height:1px;background:var(--border);margin:8px 0;}
+.bake-note{font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.5;margin-bottom:6px;}
+
+/* ── WARN ── */
+#seg-warn{display:none;background:rgba(255,204,0,.08);border:1px solid rgba(255,204,0,.3);padding:6px 8px;font-family:var(--ff-mono);font-size:10px;color:var(--warn);line-height:1.5;margin-top:8px;}
+#seg-warn.on{display:block;}
+
+/* ── EXPORT MODAL ── */
+#export-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center;}
+#export-modal.on{display:flex;}
+.modal-box{background:#0e0e1e;border:1px solid var(--border-hi);width:430px;max-height:82vh;display:flex;flex-direction:column;position:relative;}
+.modal-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid var(--export);border-left:2px solid var(--export);}
+.modal-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid var(--export);border-right:2px solid var(--export);}
+.modal-hdr{padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;}
+.modal-hdr h2{font-family:var(--ff-mono);font-size:11px;color:var(--export);letter-spacing:.1em;text-transform:uppercase;}
+.modal-close{background:transparent;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;padding:0 4px;line-height:1;}
+.modal-close:hover{color:var(--danger);}
+.modal-body{padding:14px;overflow-y:auto;flex:1;}
+.modal-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.modal-label{font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);}
+.modal-input{background:rgba(255,255,255,.04);border:1px solid var(--border-hi);color:var(--text-hi);font-family:var(--ff-mono);font-size:11px;padding:4px 8px;width:200px;outline:none;}
+.modal-input:focus{border-color:var(--export);}
+.modal-divider{height:1px;background:var(--border);margin:10px 0;}
+.part-scroll{max-height:190px;overflow-y:auto;border:1px solid var(--border);margin-bottom:10px;}
+.part-scroll::-webkit-scrollbar{width:3px;}
+.part-scroll::-webkit-scrollbar-thumb{background:var(--border-hi);}
+.pe{display:flex;align-items:center;padding:5px 8px;gap:8px;border-bottom:1px solid rgba(28,28,52,.6);font-family:var(--ff-mono);font-size:10px;}
+.pe input[type=checkbox]{accent-color:var(--export);cursor:pointer;}
+.pe-name{flex:1;color:var(--text);}
+.pe-tri{color:var(--text-dim);font-size:10px;}
+.pe.highlighted .pe-name{color:var(--sel);}
+.modal-footer{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.export-go{flex:1;height:34px;background:var(--export-glow);border:1px solid var(--export);color:var(--export);font-family:var(--ff-mono);font-size:11px;letter-spacing:.08em;cursor:pointer;transition:all .15s;}
+.export-go:hover{background:rgba(167,139,250,.22);}
+.export-go:disabled{opacity:.25;pointer-events:none;}
+.export-cancel{height:34px;padding:0 16px;background:transparent;border:1px solid var(--border-hi);color:var(--text-dim);font-family:var(--ff-mono);font-size:11px;cursor:pointer;transition:all .15s;}
+.export-cancel:hover{border-color:var(--danger);color:var(--danger);}
+.progress-wrap{display:none;margin-top:8px;}
+.progress-wrap.on{display:block;}
+.progress-bar{height:2px;background:var(--border);overflow:hidden;margin-top:4px;}
+.progress-fill{height:100%;background:var(--export);transition:width .1s;}
+.progress-label{font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);margin-top:3px;}
+
+/* ── RIGHT PANEL ── */
+#rpanel{
+  position:absolute;top:10px;right:10px;width:232px;
+  max-height:calc(100% - 56px);background:rgba(10,10,20,.96);
+  border:1px solid var(--border-hi);display:none;flex-direction:column;z-index:8;
+}
+#rpanel.on{display:flex;}
+
+/* Row 1: title */
+.rp-hdr{
+  padding:7px 10px 6px;border-bottom:1px solid var(--border);flex-shrink:0;
+  font-family:var(--ff-mono);font-size:11px;color:var(--accent);
+  letter-spacing:.1em;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.rp-hdr-count{color:var(--text-label);font-size:10px;margin-left:4px;}
+
+/* Row 2: sort dropdown */
+#rp-sort-row{
+  padding:4px 8px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+#rp-sort{
+  width:100%;height:32px;background:rgba(74,248,255,.06);
+  border:1px solid rgba(74,248,255,.25);
+  color:var(--text-hi);font-family:var(--ff-mono);font-size:11px;font-weight:700;
+  letter-spacing:.06em;cursor:pointer;padding:0 10px;
+  appearance:auto;-webkit-appearance:auto;outline:none;
+}
+#rp-sort:hover,#rp-sort:focus{border-color:var(--accent);background:var(--accent-glow);}
+#rp-sort option{background:#0a0f1a;color:var(--text-hi);font-family:var(--ff-mono);font-size:11px;}
+
+/* Row 3: select-all toolbar — 4 equal buttons + count on its own line */
+.rp-sel-bar{
+  display:grid;grid-template-columns:1fr 1fr 1fr 1fr;
+  gap:3px;padding:5px 6px 3px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.rp-sel-btn{
+  height:24px;background:transparent;border:1px solid var(--border-hi);
+  color:var(--text-label);font-family:var(--ff-mono);font-size:10px;letter-spacing:.03em;
+  cursor:pointer;transition:all .12s;padding:0;
+}
+.rp-sel-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+.rp-sel-btn.inv:hover{border-color:var(--warn);color:var(--warn);background:rgba(255,204,0,.08);}
+/* selection count row */
+.rp-count-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:3px 8px 5px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.rp-sel-count{font-family:var(--ff-mono);font-size:10px;color:var(--text-label);}
+.rp-face-count{font-family:var(--ff-mono);font-size:10px;color:var(--wand);}
+
+/* list */
+.clist{overflow-y:auto;flex:1;min-height:0;}
+.clist::-webkit-scrollbar{width:4px;}
+.clist::-webkit-scrollbar-thumb{background:var(--border-hi);}
+.ci{
+  display:flex;align-items:center;padding:5px 8px;gap:7px;cursor:pointer;
+  font-family:var(--ff-mono);font-size:10px;border-bottom:1px solid rgba(28,28,52,.5);
+  transition:background .1s;user-select:none;
+}
+.ci:hover{background:rgba(74,248,255,.05);}
+.ci.sel{background:rgba(255,102,0,.12);}
+.ci.face-sel{background:rgba(192,132,252,.12);border-left:2px solid var(--wand);}
+.ci.face-sel .ci-dot{background:var(--wand);box-shadow:0 0 5px var(--wand);}
+.ci.face-sel.sel{background:rgba(255,102,0,.14);}
+.ci.iso-hidden{opacity:.28;}
+/* checkbox */
+.ci-cb{width:13px;height:13px;flex-shrink:0;cursor:pointer;accent-color:var(--sel);}
+.ci-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--text-dim);}
+.ci.sel .ci-dot{background:var(--sel);box-shadow:0 0 5px var(--sel);}
+.ci-name{flex:1;color:var(--text);}
+.ci-tri{color:var(--text-dim);font-size:10px;white-space:nowrap;}
+.ci-face-badge{
+  font-size:9px;font-family:var(--ff-mono);color:var(--wand);
+  background:rgba(192,132,252,.15);border:1px solid rgba(192,132,252,.3);
+  padding:0 4px;border-radius:2px;white-space:nowrap;
+}
+
+/* action bar at bottom of list */
+.rp-action-bar{
+  display:none;padding:6px 8px;gap:4px;border-top:1px solid var(--border);
+  flex-shrink:0;background:rgba(255,51,85,.04);flex-direction:column;
+}
+.rp-action-bar.on{display:flex;}
+.rp-del-btn{
+  width:100%;height:30px;background:rgba(255,51,85,.1);border:1px solid rgba(255,51,85,.4);
+  color:var(--danger);font-family:var(--ff-mono);font-size:11px;font-weight:700;
+  letter-spacing:.06em;cursor:pointer;transition:all .15s;
+}
+.rp-del-btn:hover{background:rgba(255,51,85,.22);border-color:var(--danger);}
+.rp-iso-btn{
+  width:100%;height:24px;background:transparent;border:1px solid var(--border-hi);
+  color:var(--text-label);font-family:var(--ff-mono);font-size:10px;letter-spacing:.06em;
+  cursor:pointer;transition:all .15s;
+}
+.rp-iso-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── DROP ── */
+#dropzone{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:10;}
+.drop-card{border:1px dashed var(--border-hi);padding:48px 70px;text-align:center;position:relative;}
+.drop-card::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);}
+.drop-card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);}
+.drop-icon{font-size:40px;margin-bottom:12px;opacity:.5;}
+.drop-title{font-weight:700;font-size:18px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-hi);margin-bottom:5px;}
+.drop-sub{font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);margin-bottom:18px;}
+.browse-btn{padding:8px 22px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:var(--ff-ui);font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .2s;}
+.browse-btn:hover{background:var(--accent-glow);}
+#file-input{display:none;}
+
+/* ── LOADING ── */
+#loading{display:none;position:absolute;inset:0;background:rgba(7,7,15,.93);z-index:30;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+#loading.on{display:flex;}
+.ld-text{font-family:var(--ff-mono);font-size:11px;color:var(--accent);letter-spacing:.1em;}
+.ld-sub{font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);margin-top:-4px;}
+.ld-bar{width:220px;height:2px;background:var(--border);overflow:hidden;}
+.ld-bar-inner{height:100%;width:60%;background:var(--accent);animation:slide 1.4s ease-in-out infinite;}
+@keyframes slide{0%{transform:translateX(-100%);}100%{transform:translateX(300%);}}
+
+/* ── BOX SEL ── */
+#box-sel-rect{display:none;position:absolute;pointer-events:none;border:1px solid var(--warn);background:rgba(255,204,0,.06);z-index:15;}
+
+/* ── DRAGGABLE HUD WIDGETS — each independently positionable ── */
+.hud-widget{
+  position:absolute;display:none;align-items:center;
+  z-index:8;cursor:default;
+}
+.hud-widget.on{display:flex;}
+.hud-drag-handle{
+  padding:2px 5px 2px 4px;cursor:grab;opacity:.4;font-size:11px;
+  flex-shrink:0;transition:opacity .12s;line-height:1;border-right:1px solid rgba(255,255,255,.1);
+  margin-right:5px;
+}
+.hud-drag-handle:hover{opacity:.9;}
+.hud-drag-handle:active{cursor:grabbing;}
+/* small resize hint shown on hover */
+.hud-widget::after{
+  content:'';position:absolute;bottom:-1px;right:-1px;
+  width:7px;height:7px;
+  border-bottom:2px solid rgba(255,255,255,.15);
+  border-right:2px solid rgba(255,255,255,.15);
+  pointer-events:none;
+}
+
+/* HINTS widget — keyboard shortcuts */
+#hints{
+  bottom:32px;left:50%;transform:translateX(-50%);
+  background:rgba(10,10,20,.93);border:1px solid var(--border-hi);
+  padding:5px 10px;gap:12px;
+  font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);
+}
+#hints.on{display:flex;}
+.hi span{color:var(--accent);}
+.hi span.w{color:var(--warn);}
+
+/* EXPLODE badge widget */
+#explode-badge{
+  bottom:74px;left:50%;transform:translateX(-50%);
+  background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.35);
+  color:var(--explode);padding:4px 10px 4px 2px;
+  font-family:var(--ff-mono);font-size:10px;
+}
+/* ORIENT badge widget */
+#orient-badge{
+  bottom:102px;left:50%;transform:translateX(-50%);
+  background:rgba(244,114,182,.10);border:1px solid rgba(244,114,182,.35);
+  color:var(--orient);padding:4px 10px 4px 2px;
+  font-family:var(--ff-mono);font-size:10px;
+}
+
+/* ── TOP BADGE ROW — sel + wand badges, fixed at top, non-overlapping ── */
+#top-badge-row{
+  position:absolute;top:12px;left:0;right:0;
+  display:flex;align-items:flex-start;justify-content:space-between;
+  padding:0 14px;pointer-events:none;z-index:9;gap:8px;
+}
+#sel-badge{
+  display:none;padding:5px 12px;
+  background:rgba(255,102,0,.15);border:1px solid rgba(255,102,0,.4);
+  font-family:var(--ff-mono);font-size:10px;color:var(--sel);white-space:nowrap;flex-shrink:0;
+}
+#sel-badge.on{display:block;}
+#wand-tol-badge{
+  display:none;padding:4px 12px;
+  background:rgba(192,132,252,.12);border:1px solid rgba(192,132,252,.3);
+  font-family:var(--ff-mono);font-size:10px;color:var(--wand);
+  white-space:nowrap;flex-shrink:0;margin-left:auto;
+}
+#wand-tol-badge.on{display:block;}
+
+/* ── STATUS BAR — always anchored at very bottom ── */
+#status{position:absolute;bottom:0;left:0;right:0;height:26px;background:rgba(7,7,15,.97);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:16px;font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);z-index:10;}
+#s-mode{color:var(--accent);font-weight:bold;letter-spacing:.05em;}
+
+body.wand #canvas,body.boxsel #canvas{cursor:crosshair;}
+body.move #canvas{cursor:grab;}
+body.move.dragging #canvas{cursor:grabbing;}
+
+/* ── PANEL LOCK STRIP ── */
+#lp-lock-strip{
+  display:flex;align-items:center;gap:6px;padding:5px 10px;
+  background:rgba(74,248,255,.04);border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+#lp-lock-label{
+  flex:1;font-family:var(--ff-mono);font-size:9px;color:var(--text-dim);
+  letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#btn-lp-lock{
+  display:flex;align-items:center;gap:5px;height:22px;padding:0 8px;
+  background:transparent;border:1px solid var(--border-hi);
+  color:var(--text-label);font-family:var(--ff-mono);font-size:9px;
+  letter-spacing:.06em;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;
+}
+#btn-lp-lock:hover{border-color:var(--accent);color:var(--accent);}
+#lpanel.layout-locked #btn-lp-lock{border-color:var(--warn);color:var(--warn);background:rgba(255,204,0,.08);}
+#lpanel.layout-locked #lp-lock-label{color:var(--warn);opacity:.8;}
+
+/* When locked: hide drag handles, prevent dragging cursor, remove drag visual feedback */
+#lpanel.layout-locked .lp-drag-handle{
+  opacity:0;pointer-events:none;cursor:default;
+}
+#lpanel.layout-locked .lp-section{cursor:default;}
+#lpanel.layout-locked .lp-section.dragging-over{border-top:none;}
+
+/* ── TRIANGLE COLOR SWATCHES ── */
+.tri-cp{
+  width:20px;height:20px;border:2px solid rgba(255,255,255,.15);cursor:pointer;
+  flex-shrink:0;transition:border-color .12s,transform .1s;border-radius:2px;padding:0;
+}
+.tri-cp:hover{border-color:rgba(255,255,255,.7);transform:scale(1.15);}
+.tri-cp.active{border-color:#fff;box-shadow:0 0 5px rgba(255,255,255,.5);}
+
+/* ── DRAGGABLE LEFT PANEL SECTIONS ── */
+.lp-section{
+  border-bottom:1px solid var(--border);padding:0;flex-shrink:0;
+  transition:opacity .15s;
+}
+.lp-section.dragging-over{border-top:2px solid var(--accent);}
+.lp-section.being-dragged{opacity:.4;}
+.lp-section-header{
+  display:flex;align-items:center;gap:0;cursor:pointer;
+  padding:8px 12px 0;margin-bottom:0;user-select:none;
+}
+.lp-drag-handle{
+  color:var(--text-dim);font-size:12px;margin-right:6px;cursor:grab;
+  flex-shrink:0;opacity:.5;transition:opacity .12s;
+  padding:2px 3px;
+}
+.lp-drag-handle:hover{opacity:1;}
+.lp-drag-handle:active{cursor:grabbing;}
+.lp-collapse-btn{
+  margin-left:auto;background:transparent;border:none;
+  color:var(--text-dim);font-size:14px;cursor:pointer;
+  padding:0 2px;line-height:1;transition:transform .2s,color .12s;flex-shrink:0;
+}
+.lp-collapse-btn:hover{color:var(--accent);}
+.lp-section.collapsed-sec .lp-collapse-btn{transform:rotate(-90deg);}
+.lp-section-body{padding:8px 12px 10px;overflow:hidden;}
+.lp-section.collapsed-sec .lp-section-body{display:none;}
+/* keep the old lp-title inside .lp-section-header */
+.lp-section-header .lp-title{margin-bottom:0;flex:1;}
+
+/* ── VIEW CUBE ── */
+#viewcube-wrap{
+  position:absolute;bottom:34px;left:12px;
+  display:none;flex-direction:column;align-items:center;gap:4px;z-index:10;
+}
+#viewcube-wrap.on{display:flex;}
+#viewcube{
+  width:100px;height:100px;cursor:pointer;
+  border:1px solid var(--border-hi);
+}
+#viewcube-labels{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;width:100px;
+}
+.vc-btn{
+  height:20px;background:rgba(10,10,20,.85);border:1px solid var(--border-hi);
+  color:var(--text-label);font-family:var(--ff-mono);font-size:9px;letter-spacing:.04em;
+  cursor:pointer;transition:all .12s;padding:0;
+}
+.vc-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+
+/* ── SETTINGS MODAL ── */
+.tbtn.settings-btn{border-color:var(--border-hi);color:var(--text-label);}
+.tbtn.settings-btn:hover{border-color:var(--text-hi);color:var(--text-hi);}
+#settings-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;align-items:center;justify-content:center;}
+#settings-modal.on{display:flex;}
+.settings-box{
+  background:#08080f;border:1px solid var(--border-hi);
+  width:460px;max-height:85vh;display:flex;flex-direction:column;position:relative;
+  box-shadow:0 0 40px rgba(0,0,0,.5);
+}
+.settings-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);}
+.settings-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);}
+.settings-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.settings-hdr-title{font-family:var(--ff-mono);font-size:12px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;flex:1;}
+.settings-close{background:transparent;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;line-height:1;}
+.settings-close:hover{color:var(--danger);}
+.settings-body{padding:16px;overflow-y:auto;flex:1;}
+.settings-body::-webkit-scrollbar{width:4px;}
+.settings-body::-webkit-scrollbar-thumb{background:var(--border-hi);}
+.settings-section{margin-bottom:20px;}
+.settings-section-title{font-family:var(--ff-mono);font-size:10px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.preset-card{
+  padding:10px 12px;border:1px solid var(--border-hi);cursor:pointer;transition:all .15s;
+  background:transparent;text-align:left;
+}
+.preset-card.active{border-color:var(--accent);background:var(--accent-glow);}
+.preset-card:hover:not(.active){border-color:var(--border-hi);background:rgba(255,255,255,.03);}
+.preset-name{font-family:var(--ff-mono);font-size:11px;font-weight:700;color:var(--text-hi);letter-spacing:.06em;margin-bottom:4px;}
+.preset-desc{font-family:var(--ff-mono);font-size:9px;color:var(--text-label);line-height:1.5;}
+.preset-tag{font-family:var(--ff-mono);font-size:9px;color:var(--accent);margin-top:4px;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.settings-label{font-family:var(--ff-mono);font-size:10px;color:var(--text-label);}
+.settings-val{font-family:var(--ff-mono);font-size:10px;color:var(--text-hi);}
+.settings-toggle{
+  display:flex;align-items:center;gap:0;
+}
+.settings-toggle button{
+  height:24px;padding:0 10px;background:transparent;border:1px solid var(--border-hi);
+  color:var(--text-dim);font-family:var(--ff-mono);font-size:9px;cursor:pointer;transition:all .12s;
+}
+.settings-toggle button.active{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);}
+.settings-toggle button:first-child{border-right:none;}
+.settings-toggle button:last-child{border-left:none;}
+.settings-footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.settings-apply{flex:1;height:32px;background:var(--accent-glow);border:1px solid var(--accent);color:var(--accent);font-family:var(--ff-mono);font-size:11px;letter-spacing:.08em;cursor:pointer;transition:all .15s;}
+.settings-apply:hover{background:rgba(74,248,255,.22);}
+.settings-cancel{height:32px;padding:0 14px;background:transparent;border:1px solid var(--border-hi);color:var(--text-dim);font-family:var(--ff-mono);font-size:11px;cursor:pointer;transition:all .15s;}
+.settings-cancel:hover{border-color:var(--danger);color:var(--danger);}
+
+/* ── AI ADVISOR ── */
+.tbtn.ai-btn{border-color:#0d2535;color:var(--ai);}
+.tbtn.ai-btn:hover{border-color:var(--ai);background:var(--ai-glow);}
+
+#ai-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);
+  z-index:200;align-items:center;justify-content:center;
+}
+#ai-modal.on{display:flex;}
+.ai-box{
+  background:#080f18;border:1px solid var(--ai);
+  width:520px;max-height:88vh;display:flex;flex-direction:column;
+  position:relative;box-shadow:0 0 40px rgba(56,189,248,.15);
+}
+.ai-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid var(--ai);border-left:2px solid var(--ai);}
+.ai-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid var(--ai);border-right:2px solid var(--ai);}
+.ai-hdr{
+  padding:12px 16px;border-bottom:1px solid rgba(56,189,248,.2);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.ai-hdr-icon{font-size:18px;}
+.ai-hdr-title{font-family:var(--ff-mono);font-size:13px;color:var(--ai);letter-spacing:.1em;text-transform:uppercase;flex:1;}
+.ai-hdr-close{background:transparent;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;line-height:1;padding:0 4px;}
+.ai-hdr-close:hover{color:var(--danger);}
+
+.ai-body{padding:16px;overflow-y:auto;flex:1;}
+.ai-body::-webkit-scrollbar{width:4px;}
+.ai-body::-webkit-scrollbar-thumb{background:rgba(56,189,248,.3);}
+
+/* Metrics grid */
+.ai-metrics{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px;
+}
+.ai-metric{
+  background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.15);
+  padding:8px 10px;display:flex;flex-direction:column;gap:2px;
+}
+.ai-metric-label{font-family:var(--ff-mono);font-size:10px;color:var(--text-label);letter-spacing:.06em;}
+.ai-metric-val{font-family:var(--ff-mono);font-size:13px;color:var(--ai);font-weight:700;}
+.ai-metric-sub{font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);}
+
+/* Recommendations */
+.ai-recs{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.ai-rec{
+  border:1px solid;padding:10px 12px;position:relative;
+}
+.ai-rec.priority-high{border-color:rgba(52,211,153,.5);background:rgba(52,211,153,.06);}
+.ai-rec.priority-med {border-color:rgba(251,146,60,.4);background:rgba(251,146,60,.05);}
+.ai-rec.priority-low {border-color:rgba(56,189,248,.3);background:rgba(56,189,248,.04);}
+.ai-rec-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.ai-rec-badge{
+  font-family:var(--ff-mono);font-size:10px;font-weight:700;padding:2px 7px;letter-spacing:.06em;
+}
+.ai-rec.priority-high .ai-rec-badge{color:#34d399;background:rgba(52,211,153,.15);}
+.ai-rec.priority-med  .ai-rec-badge{color:var(--move);background:rgba(251,146,60,.15);}
+.ai-rec.priority-low  .ai-rec-badge{color:var(--ai);background:rgba(56,189,248,.12);}
+.ai-rec-title{font-family:var(--ff-ui);font-size:13px;font-weight:700;color:var(--text-hi);letter-spacing:.04em;}
+.ai-rec-body{font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;}
+.ai-rec-action{
+  display:inline-block;margin-top:8px;padding:5px 12px;
+  font-family:var(--ff-mono);font-size:10px;font-weight:700;letter-spacing:.06em;
+  cursor:pointer;transition:all .15s;border:1px solid;
+  background:transparent;
+}
+.ai-rec.priority-high .ai-rec-action{color:#34d399;border-color:rgba(52,211,153,.4);}
+.ai-rec.priority-high .ai-rec-action:hover{background:rgba(52,211,153,.15);}
+.ai-rec.priority-med  .ai-rec-action{color:var(--move);border-color:rgba(251,146,60,.4);}
+.ai-rec.priority-med  .ai-rec-action:hover{background:rgba(251,146,60,.12);}
+.ai-rec.priority-low  .ai-rec-action{color:var(--ai);border-color:rgba(56,189,248,.3);}
+.ai-rec.priority-low  .ai-rec-action:hover{background:rgba(56,189,248,.1);}
+
+/* AI narrative */
+.ai-narrative{
+  background:rgba(56,189,248,.04);border:1px solid rgba(56,189,248,.15);
+  padding:12px 14px;margin-bottom:14px;
+}
+.ai-narrative-label{
+  font-family:var(--ff-mono);font-size:10px;color:var(--ai);letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:8px;
+}
+.ai-narrative-text{
+  font-family:var(--ff-ui);font-size:12px;color:var(--text-label);line-height:1.7;
+}
+.ai-narrative-text strong{color:var(--text-hi);}
+/* loading shimmer */
+.ai-thinking{
+  display:flex;align-items:center;gap:10px;padding:16px;
+  font-family:var(--ff-mono);font-size:11px;color:var(--ai);letter-spacing:.08em;
+}
+.ai-dots span{animation:blink 1.4s infinite; display:inline-block;}
+.ai-dots span:nth-child(2){animation-delay:.2s;}
+.ai-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:.2;}40%{opacity:1;}}
+
+.ai-footer{
+  padding:10px 16px;border-top:1px solid rgba(56,189,248,.15);
+  display:flex;gap:8px;flex-shrink:0;
+}
+.ai-apply-all{
+  flex:1;height:34px;background:rgba(56,189,248,.12);border:1px solid var(--ai);
+  color:var(--ai);font-family:var(--ff-mono);font-size:11px;letter-spacing:.08em;
+  cursor:pointer;transition:all .15s;
+}
+.ai-apply-all:hover{background:rgba(56,189,248,.22);}
+.ai-close-btn{
+  height:34px;padding:0 16px;background:transparent;border:1px solid var(--border-hi);
+  color:var(--text-dim);font-family:var(--ff-mono);font-size:11px;
+  cursor:pointer;transition:all .15s;
+}
+.ai-close-btn:hover{border-color:var(--danger);color:var(--danger);}
+.lp-title.move-title{color:var(--move);}
+.tbtn.move-btn{border-color:#4a2a0a;color:var(--move);}
+.tbtn.move-btn:hover{border-color:var(--move);background:var(--move-glow);}
+.tbtn.move-btn.active{border-color:var(--move);color:var(--move);background:var(--move-glow);}
+.move-coord-row{display:flex;gap:4px;margin-bottom:6px;}
+.move-coord{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:rgba(255,255,255,.03);border:1px solid var(--border-hi);padding:5px 4px;
+}
+.move-coord-label{font-family:var(--ff-mono);font-size:10px;font-weight:700;letter-spacing:.06em;}
+.move-coord-label.x{color:var(--ax-x);}
+.move-coord-label.y{color:var(--ax-y);}
+.move-coord-label.z{color:var(--ax-z);}
+.move-coord-val{font-family:var(--ff-mono);font-size:11px;color:var(--text-hi);}
+#sl-mv-y::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--ax-y);border:none;cursor:pointer;}
+#sl-mv-y:disabled{opacity:.35;pointer-events:none;}
+  background:transparent;border:1px solid var(--border-hi);
+  color:var(--text-label);font-family:var(--ff-mono);font-size:10px;
+  letter-spacing:.05em;padding:3px 8px;cursor:pointer;transition:all .15s;flex-shrink:0;
+}
+#rp-sort:hover{border-color:var(--accent);color:var(--accent);}
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <div class="logo">◈ STL·WAND</div>
+  <div class="sep"></div>
+  <button class="tbtn" id="btn-panel">
+    <svg viewBox="0 0 14 14" fill="currentColor"><rect x="1" y="2" width="4" height="10" rx=".4"/><rect x="7" y="2" width="6" height="2" rx=".3"/><rect x="7" y="6" width="6" height="2" rx=".3"/><rect x="7" y="10" width="6" height="2" rx=".3"/></svg>SEG
+  </button>
+  <div class="sep"></div>
+  <button class="tbtn active" id="btn-orbit">
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="5.5"/><ellipse cx="7" cy="7" rx="2.5" ry="5.5"/><line x1="1.5" y1="7" x2="12.5" y2="7"/></svg>ORBIT
+  </button>
+  <button class="tbtn" id="btn-wand">
+    <svg viewBox="0 0 14 14" fill="currentColor"><path d="M9.5 1l.8 2.2L12.5 4l-2.2.8L9.5 7l-.8-2.2L6.5 4l2.2-.8zM2 8l.4 1.1 1.1.4-1.1.4L2 11l-.4-1.1L.5 9.5l1.1-.4z"/><line x1="1" y1="13" x2="7.5" y2="6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>WAND
+  </button>
+  <button class="tbtn" id="btn-box">
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="2.5 1.5"><rect x="2" y="2" width="10" height="10" rx=".5"/></svg>BOX SEL
+  </button>
+  <button class="tbtn move-btn" id="btn-move">
+    <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.5 2.5h-1V6h2.5V4.5L12.5 6.5l-2.5 2.5V7.5H8.5v2.5h1L8 12.5 6.5 10h1V7.5H5v1.5L2.5 6.5 5 4.5V6h2V3.5H5.5z"/></svg>MOVE
+  </button>
+  <div class="sep"></div>
+  <button class="tbtn danger" id="btn-delete" disabled>
+    <svg viewBox="0 0 14 14" fill="currentColor"><path d="M5 1.5h4v1h3v1.5H2V2.5h3v-1zm-1.5 3.5h7L10 13H4L2.5 5zm2.5 1v5h1V6H7zm2 0v5h1V6H9z"/></svg>DELETE
+  </button>
+  <button class="tbtn" id="btn-undo" disabled>
+    <svg viewBox="0 0 14 14" fill="currentColor"><path d="M5.5 2.5L1 6l4.5 3.5V7C8 7 10 8 10.5 11 10.5 7.5 9 4.5 5.5 4.5V2.5z"/></svg>UNDO
+  </button>
+  <div class="sep"></div>
+  <button class="tbtn ai-btn" id="btn-ai" disabled>
+    <svg viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="4" r="2.2"/><path d="M3.5 11c0-1.93 1.567-3.5 3.5-3.5s3.5 1.57 3.5 3.5"/><circle cx="2.5" cy="7" r="1.2" opacity=".6"/><circle cx="11.5" cy="7" r="1.2" opacity=".6"/><line x1="3.6" y1="7" x2="4.8" y2="6.2" stroke="currentColor" stroke-width=".8"/><line x1="10.4" y1="7" x2="9.2" y2="6.2" stroke="currentColor" stroke-width=".8"/></svg>AI ADVISOR
+  </button>
+  <button class="tbtn export-btn" id="btn-export" disabled>
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 2v7M4 7l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke-linecap="round"/></svg>EXPORT
+  </button>
+  <button class="tbtn settings-btn" id="btn-settings">
+    <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 9a2 2 0 100-4 2 2 0 000 4zm0-1a1 1 0 110-2 1 1 0 010 2z"/><path d="M7 1l-.9 1.6A5 5 0 004.5 3.4L2.7 3l-1 1.7 1.3 1.2a5 5 0 000 2.2L1.7 9.3l1 1.7 1.8-.4a5 5 0 001.6.8L7 13l1-.1-.1-2-.1.1.9-1.6a5 5 0 001.6-.8l1.8.4 1-1.7-1.3-1.2a5 5 0 000-2.2L13.3 4.7l-1-1.7-1.8.4A5 5 0 009.5 2.6L8.9 1H7z" fill-rule="evenodd" clip-rule="evenodd"/></svg>SETTINGS
+  </button>
+  <button class="tbtn" id="btn-load">
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="10" height="10" rx=".5"/><path d="M5 7l2 2 2-2M7 4v5" stroke-linecap="round" stroke-linejoin="round"/></svg>LOAD
+  </button>
+  <div class="stats">
+    <div class="stat"><div class="stat-v" id="sv-comp">—</div><div class="stat-l">PARTS</div></div>
+    <div class="stat"><div class="stat-v" id="sv-tri">—</div><div class="stat-l">TRIANGLES</div></div>
+    <div class="stat"><div class="stat-v" id="sv-sel">0</div><div class="stat-l">SELECTED</div></div>
+  </div>
+</div>
+
+<div id="main">
+
+  <!-- LEFT PANEL -->
+  <div id="lpanel" class="collapsed">
+
+    <!-- Panel lock strip -->
+    <div id="lp-lock-strip">
+      <span id="lp-lock-label">LAYOUT UNLOCKED — drag sections to reorder</span>
+      <button id="btn-lp-lock" title="Lock/unlock panel layout">
+        <svg id="lock-icon-open" viewBox="0 0 14 14" fill="currentColor" width="12" height="12">
+          <path d="M10 5.5V4a3 3 0 00-6 0v1.5H3v7h8v-7h-1zM5.5 4a1.5 1.5 0 013 0v1.5h-3V4zM7 9.5a1 1 0 110-2 1 1 0 010 2z"/>
+        </svg>
+        <svg id="lock-icon-closed" viewBox="0 0 14 14" fill="currentColor" width="12" height="12" style="display:none;">
+          <path d="M10 5.5V4a3 3 0 00-6 0v1.5H3v7h8v-7h-1zM6 4a1 1 0 012 0v1.5H6V4z" opacity=".4"/>
+          <rect x="3" y="5.5" width="8" height="7" rx=".5"/>
+          <circle cx="7" cy="9" r="1.2" fill="#fff"/>
+        </svg>
+        LOCK LAYOUT
+      </button>
+    </div>
+    <div class="lp-section">
+      <div class="lp-title">Segmentation <em id="lp-ct"></em></div>
+      <div class="seg-methods">
+        <button class="meth-btn active" id="meth-conn">CONNECT</button>
+        <button class="meth-btn" id="meth-angle">ANGLE</button>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><span>BREAK ANGLE</span><strong id="lbl-angle">30°</strong></div>
+        <input type="range" class="warn-sl" id="sl-angle" min="2" max="85" value="30" disabled>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><span>MIN TRIANGLES</span><strong id="lbl-minTri">0</strong></div>
+        <input type="range" id="sl-minTri" min="0" max="500" value="0" step="5" disabled>
+      </div>
+      <button class="action-btn" id="btn-reseg">⟳ RE-SEGMENT</button>
+      <div id="seg-warn" class="on">Load an STL to begin.</div>
+    </div>
+
+    <!-- Wand Settings -->
+    <div class="lp-section">
+      <div class="lp-title wand-title">Wand Tolerance</div>
+
+      <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;margin-bottom:8px;">
+        Flood-fills triangles by <strong style="color:var(--wand);">surface normal angle</strong> — exactly like Photoshop's magic wand, but on 3D faces.
+      </div>
+
+      <!-- Tolerance slider -->
+      <div class="wand-tol-row">
+        <span>TOLERANCE</span>
+        <strong id="lbl-wand-tol">0%</strong>
+      </div>
+      <input type="range" class="wand-sl" id="sl-wand-tol" min="0" max="100" value="0" step="1" disabled>
+      <div id="wand-preview-bar"><div id="wand-preview-fill"></div></div>
+
+      <!-- Contiguous toggle -->
+      <div class="contiguous-row">
+        <input type="checkbox" id="chk-contiguous" checked>
+        <label for="chk-contiguous">CONTIGUOUS (edge-connected faces only)</label>
+      </div>
+
+      <div id="metric-desc" style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;margin-top:8px;">
+        <strong style="color:var(--text-hi);">0%</strong> — click selects one triangle; Shift+click adds individual triangles; <strong style="color:var(--wand);">Shift+drag paints</strong> triangles as you move.<br>
+        <strong style="color:var(--text-hi);">1–25%</strong> — flat / co-planar faces.<br>
+        <strong style="color:var(--text-hi);">26–60%</strong> — gently curved surfaces.<br>
+        <strong style="color:var(--text-hi);">61–100%</strong> — entire connected mesh.<br><br>
+        Uncheck <em>Contiguous</em> to select all matching faces anywhere in the mesh.
+      </div>
+      <!-- Triangle color tint -->
+      <div class="orient-divider" style="margin:10px 0 8px;"></div>
+      <div class="lp-title wand-title" style="margin-bottom:6px;">Triangle Color</div>
+      <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);margin-bottom:8px;">
+        Paint selected triangles with a custom color. Applied to overlay only — does not affect export geometry.
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <input type="color" id="tri-color-pick" value="#ff6600"
+          style="width:40px;height:28px;border:1px solid var(--border-hi);background:transparent;cursor:pointer;padding:2px;">
+        <div style="flex:1;display:flex;gap:4px;flex-wrap:wrap;" id="tri-color-presets">
+          <button class="tri-cp" data-c="#ff6600" title="Orange" style="background:#ff6600;"></button>
+          <button class="tri-cp" data-c="#ef4444" title="Red"    style="background:#ef4444;"></button>
+          <button class="tri-cp" data-c="#3b82f6" title="Blue"   style="background:#3b82f6;"></button>
+          <button class="tri-cp" data-c="#22c55e" title="Green"  style="background:#22c55e;"></button>
+          <button class="tri-cp" data-c="#f59e0b" title="Yellow" style="background:#f59e0b;"></button>
+          <button class="tri-cp" data-c="#a855f7" title="Purple" style="background:#a855f7;"></button>
+          <button class="tri-cp" data-c="#ec4899" title="Pink"   style="background:#ec4899;"></button>
+          <button class="tri-cp" data-c="#ffffff" title="White"  style="background:#ffffff;"></button>
+        </div>
+      </div>
+      <button class="action-btn" id="btn-apply-tri-color" disabled style="background:rgba(255,102,0,.08);border-color:var(--sel);color:var(--sel);">
+        ◈ APPLY COLOR TO SELECTED TRIANGLES
+      </button>
+    </div>
+    <div class="lp-section">
+      <div class="lp-title">Isolation</div>
+      <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;margin-bottom:6px;">Hide everything except selected parts to focus the wand on a region.</div>
+      <div class="btn-row">
+        <button class="half-btn" id="btn-isolate" disabled>ISOLATE SEL</button>
+        <button class="half-btn" id="btn-showall"  disabled>SHOW ALL</button>
+      </div>
+    </div>
+
+    <!-- ORIENT / ROTATE -->
+    <div class="lp-section">
+      <div class="lp-title orient-title">Re-Orient <em id="orient-tgt-lbl">(MODEL)</em></div>
+
+      <!-- Target -->
+      <div class="orient-target-row">
+        <button class="meth-btn orient-active" id="orient-tgt-model">WHOLE MODEL</button>
+        <button class="meth-btn" id="orient-tgt-sel">SELECTION</button>
+      </div>
+
+      <!-- X Axis -->
+      <div class="ax-block">
+        <div class="ax-header">
+          <div class="ax-tag x">X</div>
+          <div class="ax-slider-num">
+            <input type="range" class="rx-sl" id="sl-rx" min="-180" max="180" value="0" step="1" disabled>
+            <input type="number" class="ax-num" id="num-rx" value="0" min="-360" max="360" step="1" disabled>
+            <span class="ax-deg">°</span>
+          </div>
+        </div>
+        <div class="ax-quick">
+          <button class="ax-q" id="ax-rx-n90" disabled>−90</button>
+          <button class="ax-q" id="ax-rx-n45" disabled>−45</button>
+          <button class="ax-q" id="ax-rx-180" disabled>180</button>
+          <button class="ax-q" id="ax-rx-p45" disabled>+45</button>
+          <button class="ax-q" id="ax-rx-p90" disabled>+90</button>
+        </div>
+      </div>
+
+      <!-- Y Axis -->
+      <div class="ax-block">
+        <div class="ax-header">
+          <div class="ax-tag y">Y</div>
+          <div class="ax-slider-num">
+            <input type="range" class="ry-sl" id="sl-ry" min="-180" max="180" value="0" step="1" disabled>
+            <input type="number" class="ax-num" id="num-ry" value="0" min="-360" max="360" step="1" disabled>
+            <span class="ax-deg">°</span>
+          </div>
+        </div>
+        <div class="ax-quick">
+          <button class="ax-q" id="ax-ry-n90" disabled>−90</button>
+          <button class="ax-q" id="ax-ry-n45" disabled>−45</button>
+          <button class="ax-q" id="ax-ry-180" disabled>180</button>
+          <button class="ax-q" id="ax-ry-p45" disabled>+45</button>
+          <button class="ax-q" id="ax-ry-p90" disabled>+90</button>
+        </div>
+      </div>
+
+      <!-- Z Axis -->
+      <div class="ax-block">
+        <div class="ax-header">
+          <div class="ax-tag z">Z</div>
+          <div class="ax-slider-num">
+            <input type="range" class="rz-sl" id="sl-rz" min="-180" max="180" value="0" step="1" disabled>
+            <input type="number" class="ax-num" id="num-rz" value="0" min="-360" max="360" step="1" disabled>
+            <span class="ax-deg">°</span>
+          </div>
+        </div>
+        <div class="ax-quick">
+          <button class="ax-q" id="ax-rz-n90" disabled>−90</button>
+          <button class="ax-q" id="ax-rz-n45" disabled>−45</button>
+          <button class="ax-q" id="ax-rz-180" disabled>180</button>
+          <button class="ax-q" id="ax-rz-p45" disabled>+45</button>
+          <button class="ax-q" id="ax-rz-p90" disabled>+90</button>
+        </div>
+      </div>
+
+      <div class="orient-divider"></div>
+      <div class="bake-note">Rotation is baked automatically when you release the slider. RESET clears back to 0°.</div>
+      <div class="btn-row">
+        <button class="half-btn" id="btn-orient-reset" disabled>RESET</button>
+      </div>
+    </div>
+
+    <!-- Move / Translate -->
+    <div class="lp-section">
+      <div class="lp-title move-title">Translate / Move</div>
+      <div id="move-context-msg" style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.5;margin-bottom:8px;padding:6px 8px;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);">
+        No parts selected — drag moves the whole model.
+      </div>
+      <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.5;margin-bottom:6px;">
+        <strong style="color:var(--move);">LMB DRAG</strong> = X/Z plane &nbsp;|&nbsp;
+        <strong style="color:var(--move);">SHIFT+DRAG</strong> = vertical (Y)
+      </div>
+      <div class="move-coord-row">
+        <div class="move-coord">
+          <div class="move-coord-label x">X</div>
+          <div class="move-coord-val" id="mv-x">0.00</div>
+        </div>
+        <div class="move-coord">
+          <div class="move-coord-label y">Y</div>
+          <div class="move-coord-val" id="mv-y">0.00</div>
+        </div>
+        <div class="move-coord">
+          <div class="move-coord-label z">Z</div>
+          <div class="move-coord-val" id="mv-z">0.00</div>
+        </div>
+      </div>
+      <!-- Y slider for fine vertical control -->
+      <div class="slider-row" style="margin-top:4px;">
+        <div class="slider-label">
+          <span style="color:var(--ax-y);">▲ VERTICAL (Y)</span>
+          <strong id="lbl-mv-y" style="color:var(--ax-y);">0.00</strong>
+        </div>
+        <input type="range" id="sl-mv-y" min="-500" max="500" value="0" step="0.5"
+          style="-webkit-appearance:none;appearance:none;background:var(--border-hi);border-radius:2px;cursor:pointer;"
+          disabled>
+      </div>
+      <div class="btn-row">
+        <button class="half-btn" id="btn-move-reset" disabled style="border-color:#3a1a05;color:var(--move);">RESET POS</button>
+        <button class="half-btn" id="btn-move-ground" disabled style="border-color:#1a3a05;color:#86efac;" title="Snap selected parts (or whole model) to Y=0">⬇ TO GROUND</button>
+      </div>
+      <div style="font-family:var(--ff-mono);font-size:9px;color:var(--text-dim);margin-top:5px;line-height:1.4;">
+        Moves are baked automatically on release. TO GROUND snaps lowest point to Y=0.
+      </div>
+    </div>
+
+    <!-- Explode -->
+    <div class="lp-section">
+      <div class="lp-title explode-title">Explode View</div>
+      <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;margin-bottom:8px;">Spread parts radially so the wand can reach each one.</div>
+      <div class="slider-row">
+        <div class="slider-label"><span>SPREAD</span><strong class="ex" id="lbl-explode">0%</strong></div>
+        <input type="range" class="ex-sl" id="sl-explode" min="0" max="100" value="0" disabled>
+      </div>
+      <div class="btn-row">
+        <button class="half-btn" id="btn-explode-full"  disabled style="border-color:#1a4a38;color:var(--explode);">FULL</button>
+        <button class="half-btn" id="btn-explode-reset" disabled style="border-color:#1a3020;color:#6ee7b7;">RESET</button>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="lp-section">
+      <div class="lp-title export-title">Export STL Files</div>
+      <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;margin-bottom:6px;">Each part saved as its own .stl, bundled in a .zip.</div>
+      <button class="action-btn export-all" id="btn-export-all" disabled>⬇ EXPORT ALL PARTS</button>
+      <button class="action-btn export-sel" id="btn-export-sel" disabled style="margin-top:4px;">⬇ EXPORT SELECTED</button>
+    </div>
+
+    <!-- Tips -->
+    <div class="lp-section" style="flex:1;">
+      <div class="lp-title">Tips</div>
+      <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.7;">
+        <span style="color:var(--accent);">CONNECT</span> — splits bodies with no shared vertices.<br><br>
+        <span style="color:var(--warn);">ANGLE</span> — splits at sharp edges (15–35° for mechanical).<br><br>
+        <span style="color:var(--orient);">RE-ORIENT</span> — live-preview rotation with sliders or quick-step buttons. Target <em style="color:var(--text)">Whole Model</em> or just the <em style="color:var(--text)">Selection</em>. Hit <em style="color:var(--text)">Bake</em> to write into geometry before exporting.<br><br>
+        <span style="color:var(--explode);">EXPLODE</span> — spread parts so wand can reach each individually.<br><br>
+        <span style="color:var(--export);">EXPORT</span> — binary STL per part, zipped. Bake rotation first if needed.
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEWPORT -->
+  <div id="viewport" style="flex:1;position:relative;overflow:hidden;">
+    <canvas id="canvas"></canvas>
+
+    <div id="dropzone">
+      <div class="drop-card">
+        <div class="drop-icon">⬡</div>
+        <div class="drop-title">Drop STL File</div>
+        <div class="drop-sub">binary or ascii · any size</div>
+        <button class="browse-btn" id="browse-btn">Browse File</button>
+        <input type="file" id="file-input" accept=".stl">
+      </div>
+    </div>
+
+    <div id="loading">
+      <div class="ld-text" id="ld-msg">PARSING GEOMETRY</div>
+      <div class="ld-sub"  id="ld-sub"></div>
+      <div class="ld-bar"><div class="ld-bar-inner"></div></div>
+    </div>
+
+    <div id="box-sel-rect"></div>
+
+    <div id="rpanel">
+      <!-- Row 1: Title -->
+      <div class="rp-hdr">
+        PARTS <span class="rp-hdr-count" id="rp-ct"></span>
+      </div>
+      <!-- Row 2: Sort dropdown -->
+      <div id="rp-sort-row">
+        <select id="rp-sort">
+          <option value="index">↕ Sort: Original Order</option>
+          <option value="desc">↓ Sort: Largest First</option>
+          <option value="asc">↑ Sort: Smallest First</option>
+        </select>
+      </div>
+      <!-- Row 3: Bulk select toolbar -->
+      <div class="rp-sel-bar">
+        <button class="rp-sel-btn" id="rp-all">ALL</button>
+        <button class="rp-sel-btn inv" id="rp-inv">INVERT</button>
+        <button class="rp-sel-btn" id="rp-vis">VISIBLE</button>
+        <button class="rp-sel-btn" id="rp-none">NONE</button>
+      </div>
+      <!-- Row 4: Selection counts -->
+      <div class="rp-count-row">
+        <span class="rp-sel-count" id="rp-sel-ct">0 selected</span>
+        <span class="rp-face-count" id="rp-face-ct"></span>
+      </div>
+      <!-- Parts list -->
+      <div class="clist" id="clist"></div>
+      <!-- Action bar (shown when selection active) -->
+      <div class="rp-action-bar" id="rp-action-bar">
+        <button class="rp-del-btn" id="rp-del-btn">🗑 DELETE SELECTED (<span id="rp-del-ct">0</span>)</button>
+        <button class="rp-iso-btn" id="rp-iso-btn">◎ ISOLATE SELECTED</button>
+      </div>
+    </div>
+
+    <!-- Top badge row: sel + wand -->
+    <div id="top-badge-row">
+      <div id="sel-badge"></div>
+      <div id="wand-tol-badge"></div>
+    </div>
+
+    <!-- Draggable HUD widgets -->
+    <div id="hints" class="hud-widget">
+      <span class="hud-drag-handle" title="Drag to move">⠿</span>
+      <div class="hi"><span>LMB</span> ORBIT</div>
+      <div class="hi"><span>RMB</span> PAN</div>
+      <div class="hi"><span>SCROLL</span> ZOOM</div>
+      <div class="hi"><span>W</span> WAND</div>
+      <div class="hi"><span>B</span> BOX</div>
+      <div class="hi"><span>I</span> ISOLATE</div>
+      <div class="hi"><span>E</span> EXPORT</div>
+    </div>
+
+    <div id="explode-badge" class="hud-widget">
+      <span class="hud-drag-handle" title="Drag to move">⠿</span>
+      <span>EXPLODE ACTIVE — parts spread apart</span>
+    </div>
+
+    <div id="orient-badge" class="hud-widget">
+      <span class="hud-drag-handle" title="Drag to move">⠿</span>
+      <span id="orient-badge-text">ROTATION PREVIEW — hit BAKE to make permanent</span>
+    </div>
+      <canvas id="viewcube"></canvas>
+      <div id="viewcube-labels">
+        <button class="vc-btn" data-view="front">FRONT</button>
+        <button class="vc-btn" data-view="back">BACK</button>
+        <button class="vc-btn" data-view="left">LEFT</button>
+        <button class="vc-btn" data-view="right">RIGHT</button>
+        <button class="vc-btn" data-view="top">TOP</button>
+        <button class="vc-btn" data-view="bottom">BTM</button>
+      </div>
+    </div>
+
+    <div id="status">
+      <div>MODE: <span id="s-mode">ORBIT</span></div>
+      <div id="s-msg">Load an STL file to begin</div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal">
+  <div class="settings-box">
+    <div class="settings-hdr">
+      <span style="font-size:16px;">⚙</span>
+      <span class="settings-hdr-title">Settings</span>
+      <button class="settings-close" id="settings-close">✕</button>
+    </div>
+    <div class="settings-body">
+
+      <div class="settings-section">
+        <div class="settings-section-title">Orbit Preset</div>
+        <div class="preset-grid">
+          <button class="preset-card active" data-preset="default" onclick="applyOrbitPreset('default',this)">
+            <div class="preset-name">DEFAULT</div>
+            <div class="preset-desc">LMB = orbit · RMB = pan · Scroll = zoom</div>
+            <div class="preset-tag">Built-in</div>
+          </button>
+          <button class="preset-card" data-preset="fusion360" onclick="applyOrbitPreset('fusion360',this)">
+            <div class="preset-name">FUSION 360</div>
+            <div class="preset-desc">Shift+MMB = orbit · MMB = pan · Scroll = zoom</div>
+            <div class="preset-tag">Autodesk</div>
+          </button>
+          <button class="preset-card" data-preset="tinkercad" onclick="applyOrbitPreset('tinkercad',this)">
+            <div class="preset-name">TINKERCAD</div>
+            <div class="preset-desc">RMB = orbit · MMB = pan · Scroll = zoom</div>
+            <div class="preset-tag">Autodesk</div>
+          </button>
+          <button class="preset-card" data-preset="freecad" onclick="applyOrbitPreset('freecad',this)">
+            <div class="preset-name">FREECAD</div>
+            <div class="preset-desc">MMB = orbit · Shift+MMB = pan · Scroll = zoom</div>
+            <div class="preset-tag">FreeCAD</div>
+          </button>
+          <button class="preset-card" data-preset="blender" onclick="applyOrbitPreset('blender',this)">
+            <div class="preset-name">BLENDER</div>
+            <div class="preset-desc">MMB = orbit · Shift+MMB = pan · Scroll = zoom</div>
+            <div class="preset-tag">Blender</div>
+          </button>
+          <button class="preset-card" data-preset="maya" onclick="applyOrbitPreset('maya',this)">
+            <div class="preset-name">MAYA</div>
+            <div class="preset-desc">Alt+LMB = orbit · Alt+MMB = pan · Alt+RMB = zoom</div>
+            <div class="preset-tag">Autodesk</div>
+          </button>
+        </div>
+        <div id="preset-hint" style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);background:rgba(74,248,255,.06);border:1px solid rgba(74,248,255,.15);padding:8px 10px;line-height:1.6;"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">View</div>
+        <div class="settings-row">
+          <span class="settings-label">VIEW CUBE</span>
+          <div class="settings-toggle">
+            <button id="opt-vc-on"  class="active" onclick="setViewCubeVisible(true);this.classList.add('active');document.getElementById('opt-vc-off').classList.remove('active')">ON</button>
+            <button id="opt-vc-off" onclick="setViewCubeVisible(false);this.classList.add('active');document.getElementById('opt-vc-on').classList.remove('active')">OFF</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">GRID</span>
+          <div class="settings-toggle">
+            <button id="opt-grid-on"  class="active" onclick="gridHelper.visible=true;this.classList.add('active');document.getElementById('opt-grid-off').classList.remove('active')">ON</button>
+            <button id="opt-grid-off" onclick="gridHelper.visible=false;this.classList.add('active');document.getElementById('opt-grid-on').classList.remove('active')">OFF</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">INVERT ZOOM</span>
+          <div class="settings-toggle">
+            <button id="opt-zoom-norm" class="active" onclick="invertZoom=false;this.classList.add('active');document.getElementById('opt-zoom-inv').classList.remove('active')">NORMAL</button>
+            <button id="opt-zoom-inv"  onclick="invertZoom=true;this.classList.add('active');document.getElementById('opt-zoom-norm').classList.remove('active')">INVERTED</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="settings-footer">
+      <button class="settings-cancel" id="settings-close-btn">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI ADVISOR MODAL -->
+<div id="ai-modal">
+  <div class="ai-box">
+    <div class="ai-hdr">
+      <span class="ai-hdr-icon">◈</span>
+      <span class="ai-hdr-title">AI Segmentation Advisor</span>
+      <button class="ai-hdr-close" id="ai-close">✕</button>
+    </div>
+    <div class="ai-body" id="ai-body">
+      <div class="ai-thinking" id="ai-thinking">
+        <span>Analyzing geometry</span>
+        <span class="ai-dots"><span>.</span><span>.</span><span>.</span></span>
+      </div>
+    </div>
+    <div class="ai-footer">
+      <button class="ai-apply-all" id="ai-apply-all" style="display:none;">⚡ APPLY TOP RECOMMENDATION</button>
+      <button class="ai-close-btn" id="ai-close-btn">CLOSE</button>
+      <button class="ai-close-btn" id="ai-key-btn" title="Set or change your Anthropic API key" onclick="promptForApiKey(false).then(()=>{});" style="border-color:rgba(56,189,248,.3);color:var(--ai);">🔑 API KEY</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div id="export-modal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h2>⬇ Export STL Parts</h2>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row">
+        <div class="modal-label">FILE PREFIX</div>
+        <input class="modal-input" id="export-prefix" value="part" maxlength="40">
+      </div>
+      <div class="modal-row">
+        <div class="modal-label">COORDINATE ORIGIN</div>
+        <select class="modal-input" id="export-origin" style="appearance:auto;cursor:pointer;">
+          <option value="local">Keep original (local)</option>
+          <option value="center">Center each part to origin</option>
+        </select>
+      </div>
+      <div class="modal-divider"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-family:var(--ff-mono);font-size:10px;color:var(--export);letter-spacing:.08em;">PARTS TO EXPORT</div>
+        <div style="display:flex;gap:10px;">
+          <span style="font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);cursor:pointer;" id="modal-sel-all">ALL</span>
+          <span style="font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);cursor:pointer;" id="modal-sel-none">NONE</span>
+        </div>
+      </div>
+      <div class="part-scroll" id="modal-part-list"></div>
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <div class="progress-label" id="progress-label">Preparing…</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="export-go" id="modal-go">⬇ DOWNLOAD ZIP</button>
+      <button class="export-cancel" id="modal-cancel">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════
+// STL PARSING
+// ══════════════════════════════════════════════
+function parseSTL(buf){
+  const hdr=new TextDecoder().decode(new Uint8Array(buf,0,Math.min(256,buf.byteLength)));
+  let asc=hdr.trimStart().toLowerCase().startsWith('solid');
+  if(asc)for(const b of new Uint8Array(buf,0,Math.min(512,buf.byteLength)))if(b>127){asc=false;break;}
+  return asc?parseASCII(buf):parseBinary(buf);
+}
+function parseBinary(buf){
+  const v=new DataView(buf),n=v.getUint32(80,true);
+  const pos=new Float32Array(n*9),nrm=new Float32Array(n*9);
+  let o=84;
+  for(let i=0;i<n;i++){
+    const nx=v.getFloat32(o,true),ny=v.getFloat32(o+4,true),nz=v.getFloat32(o+8,true);o+=12;
+    for(let j=0;j<3;j++){const b=i*9+j*3;pos[b]=v.getFloat32(o,true);pos[b+1]=v.getFloat32(o+4,true);pos[b+2]=v.getFloat32(o+8,true);nrm[b]=nx;nrm[b+1]=ny;nrm[b+2]=nz;o+=12;}
+    o+=2;
+  }
+  return{pos,nrm};
+}
+function parseASCII(buf){
+  const t=new TextDecoder().decode(buf),pa=[],na=[];let nx=0,ny=0,nz=0;
+  for(const raw of t.split('\n')){
+    const s=raw.trim();
+    if(s.startsWith('facet normal')){const p=s.split(/\s+/);nx=+p[2];ny=+p[3];nz=+p[4];}
+    else if(s.startsWith('vertex')){const p=s.split(/\s+/);pa.push(+p[1],+p[2],+p[3]);na.push(nx,ny,nz);}
+  }
+  return{pos:new Float32Array(pa),nrm:new Float32Array(na)};
+}
+
+// ══════════════════════════════════════════════
+// SEGMENTATION
+// ══════════════════════════════════════════════
+function buildVid(pos){
+  const F=pos.length/9,vm=new Map(),vid=new Int32Array(F*3);let nx=0;
+  for(let i=0;i<F*3;i++){
+    const k=`${Math.round(pos[i*3]*1e4)},${Math.round(pos[i*3+1]*1e4)},${Math.round(pos[i*3+2]*1e4)}`;
+    if(!vm.has(k))vm.set(k,nx++);vid[i]=vm.get(k);
+  }
+  return vid;
+}
+function buildEF(vid,F){
+  const ef=new Map();
+  for(let f=0;f<F;f++){
+    const a=vid[f*3],b=vid[f*3+1],c=vid[f*3+2];
+    for(const[p,q]of[[a,b],[b,c],[c,a]]){
+      const k=p<q?`${p}_${q}`:`${q}_${p}`;let ar=ef.get(k);if(!ar){ar=[];ef.set(k,ar);}ar.push(f);
+    }
+  }
+  return ef;
+}
+function segConn(pos){
+  const F=pos.length/9;if(!F)return{comp:new Int32Array(0),n:0};
+  const vid=buildVid(pos),ef=buildEF(vid,F),comp=new Int32Array(F).fill(-1);let n=0;
+  for(let s=0;s<F;s++){
+    if(comp[s]!==-1)continue;comp[s]=n;const q=[s];let qi=0;
+    while(qi<q.length){
+      const f=q[qi++],a=vid[f*3],b=vid[f*3+1],c=vid[f*3+2];
+      for(const[p,r]of[[a,b],[b,c],[c,a]]){
+        const k=p<r?`${p}_${r}`:`${r}_${p}`;
+        for(const nb of(ef.get(k)||[]))if(comp[nb]===-1){comp[nb]=n;q.push(nb);}
+      }
+    }n++;
+  }
+  return{comp,n};
+}
+function segAngle(pos,deg){
+  const F=pos.length/9;if(!F)return{comp:new Int32Array(0),n:0};
+  const N=new Float32Array(F*3);
+  for(let f=0;f<F;f++){
+    const b=f*9,ax=pos[b+3]-pos[b],ay=pos[b+4]-pos[b+1],az=pos[b+5]-pos[b+2],bx=pos[b+6]-pos[b],by=pos[b+7]-pos[b+1],bz=pos[b+8]-pos[b+2];
+    let nx=ay*bz-az*by,ny=az*bx-ax*bz,nz=ax*by-ay*bx;
+    const l=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;N[f*3]=nx/l;N[f*3+1]=ny/l;N[f*3+2]=nz/l;
+  }
+  const vid=buildVid(pos),ef=buildEF(vid,F),cosT=Math.cos(deg*Math.PI/180),comp=new Int32Array(F).fill(-1);let n=0;
+  for(let s=0;s<F;s++){
+    if(comp[s]!==-1)continue;comp[s]=n;const q=[s];let qi=0;
+    while(qi<q.length){
+      const f=q[qi++],a=vid[f*3],b=vid[f*3+1],c=vid[f*3+2];
+      for(const[p,r]of[[a,b],[b,c],[c,a]]){
+        const k=p<r?`${p}_${r}`:`${r}_${p}`;
+        for(const nb of(ef.get(k)||[])){
+          if(comp[nb]!==-1)continue;
+          const d=N[f*3]*N[nb*3]+N[f*3+1]*N[nb*3+1]+N[f*3+2]*N[nb*3+2];
+          if(d>=cosT){comp[nb]=n;q.push(nb);}
+        }
+      }
+    }n++;
+  }
+  return{comp,n};
+}
+function mergeSmall(comp,n,F,vid,min){
+  if(min<=0)return{comp,n};
+  const sz=new Int32Array(n);for(let f=0;f<F;f++)sz[comp[f]]++;
+  const ef=buildEF(vid,F),adj=Array.from({length:n},()=>new Set());
+  for(const fs of ef.values())for(let i=0;i<fs.length;i++)for(let j=i+1;j<fs.length;j++){const ca=comp[fs[i]],cb=comp[fs[j]];if(ca!==cb){adj[ca].add(cb);adj[cb].add(ca);}}
+  const rm=Int32Array.from({length:n},(_,i)=>i);
+  for(let c=0;c<n;c++)if(sz[c]<min){let b=-1,bsz=0;for(const nb of adj[c])if(sz[nb]>bsz){bsz=sz[nb];b=nb;}if(b>=0)rm[c]=b;}
+  const ni=new Int32Array(n).fill(-1);let nn=0;
+  for(let c=0;c<n;c++){const r=rm[c];if(ni[r]===-1)ni[r]=nn++;}
+  const nc=new Int32Array(F);for(let f=0;f<F;f++)nc[f]=ni[rm[comp[f]]];
+  return{comp:nc,n:nn};
+}
+
+// ══════════════════════════════════════════════
+// BINARY STL WRITER
+// ══════════════════════════════════════════════
+function meshToSTLBuffer(mesh,centerOrigin){
+  const geo=mesh.geometry,pa=geo.attributes.position.array,na=geo.attributes.normal?geo.attributes.normal.array:null;
+  const F=pa.length/9;
+  let cx=0,cy=0,cz=0;
+  if(centerOrigin){for(let i=0;i<pa.length;i+=3){cx+=pa[i];cy+=pa[i+1];cz+=pa[i+2];}cx/=(F*3);cy/=(F*3);cz/=(F*3);}
+  const buf=new ArrayBuffer(80+4+F*50),view=new DataView(buf);
+  const hdr=new Uint8Array(buf,0,80);
+  hdr.set(new TextEncoder().encode('Binary STL — STL Wand Editor'));
+  view.setUint32(80,F,true);
+  let off=84;
+  for(let f=0;f<F;f++){
+    const b=f*9;
+    const ax=pa[b]-cx,ay=pa[b+1]-cy,az=pa[b+2]-cz;
+    const bx=pa[b+3]-cx,by=pa[b+4]-cy,bz=pa[b+5]-cz;
+    const c2=pa[b+6]-cx,cy2=pa[b+7]-cy,cz2=pa[b+8]-cz;
+    let nx,ny,nz;
+    if(na){nx=na[b];ny=na[b+1];nz=na[b+2];}
+    else{const ex=bx-ax,ey=by-ay,ez=bz-az,fx=c2-ax,fy=cy2-ay,fz=cz2-az;nx=ey*fz-ez*fy;ny=ez*fx-ex*fz;nz=ex*fy-ey*fx;const l=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;nx/=l;ny/=l;nz/=l;}
+    view.setFloat32(off,nx,true);view.setFloat32(off+4,ny,true);view.setFloat32(off+8,nz,true);off+=12;
+    view.setFloat32(off,ax,true);view.setFloat32(off+4,ay,true);view.setFloat32(off+8,az,true);off+=12;
+    view.setFloat32(off,bx,true);view.setFloat32(off+4,by,true);view.setFloat32(off+8,bz,true);off+=12;
+    view.setFloat32(off,c2,true);view.setFloat32(off+4,cy2,true);view.setFloat32(off+8,cz2,true);off+=12;
+    view.setUint16(off,0,true);off+=2;
+  }
+  return buf;
+}
+
+// ══════════════════════════════════════════════
+// THREE.JS SCENE
+// ══════════════════════════════════════════════
+const canvas=document.getElementById('canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x07070f);
+scene.fog=new THREE.FogExp2(0x07070f,0.0006);
+const gridHelper=new THREE.GridHelper(400,60,0x3a4570,0x252d50);
+scene.add(gridHelper);
+const axH=new THREE.AxesHelper(3);scene.add(axH);
+scene.add(new THREE.AmbientLight(0x2a2a50,0.8));
+const d1=new THREE.DirectionalLight(0x8090c8,1.0);d1.position.set(6,12,8);scene.add(d1);
+const d2=new THREE.DirectionalLight(0x4af8ff,0.25);d2.position.set(-6,3,-6);scene.add(d2);
+const d3=new THREE.DirectionalLight(0x553366,0.3);d3.position.set(0,-5,0);scene.add(d3);
+
+const camera=new THREE.PerspectiveCamera(45,1,0.01,50000);
+const raycaster=new THREE.Raycaster();
+
+const MAT_SEL=new THREE.MeshPhongMaterial({color:0xff6600,emissive:0x2a1000,specular:0x442200,shininess:60,side:THREE.DoubleSide});
+const MAT_HOV=new THREE.MeshPhongMaterial({color:0x00ffc8,emissive:0x003322,specular:0x004433,shininess:80,side:THREE.DoubleSide});
+const MAT_HIDDEN=new THREE.MeshBasicMaterial({visible:false});
+function matNorm(){return new THREE.MeshPhongMaterial({color:0x6688aa,specular:0x1a2233,shininess:35,side:THREE.DoubleSide});}
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let meshes=[],selSet=new Set(),hiddenSet=new Set(),hovMesh=null,group=null,undoStk=[];
+let rawPos=null,rawNrm=null,segMode='conn';
+let theta=0.5,phi=1.1,radius=80,panX=0,panY=0;
+let mDown=false,mBtn=-1,mLast={x:0,y:0},dragDist=0;
+let toolMode='orbit',boxStart=null;
+let wandPainting=false;  // true while Shift+LMB dragging in wand mode (paint triangles)
+let explodeAmount=0,explodeOffsets=[],explodeScale=1;
+let loadedFileName='model';
+// Orient state
+let orientTarget='model'; // 'model' | 'sel'
+let orientAngles={x:0,y:0,z:0}; // degrees — persists after bake; sliders stay at current value
+let orientBaked=false; // true once a bake has been done with current slider values
+// List sort: 'index' | 'desc' | 'asc'
+let listSort='index';
+// Wand tolerance state
+let wandTolerance=0;      // 0–100
+let wandMetric='size';    // kept for compatibility, not used in face-level mode
+let wandContiguous=true;  // default on: edge-connected spread
+// Move / translate state
+let moveOffset=new THREE.Vector3();
+let moveIsDragging=false;
+let moveIsDraggingVertical=false;
+const moveDragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+const moveDragStart=new THREE.Vector3();
+const moveGroupStart=new THREE.Vector3();
+let moveOriginPos=new THREE.Vector3();
+// Per-part move: Map<mesh, {origin: Vector3, start: Vector3}>
+const partMoveOrigins=new Map();  // original mesh.position at load time
+const partMoveStarts=new Map();   // mesh.position at drag start
+
+// ══════════════════════════════════════════════
+// RESIZE
+// ══════════════════════════════════════════════
+const vp=document.getElementById('viewport');
+function resize(){const w=vp.clientWidth,h=vp.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
+window.addEventListener('resize',resize);resize();
+
+// ══════════════════════════════════════════════
+// CAMERA
+// ══════════════════════════════════════════════
+function camUpdate(){
+  const sp=Math.sin(phi),cp=Math.cos(phi),st=Math.sin(theta),ct=Math.cos(theta);
+  camera.position.set(panX+radius*sp*st,panY+radius*cp,radius*sp*ct);
+  camera.lookAt(panX,panY,0);
+}
+camUpdate();
+
+// ══════════════════════════════════════════════
+// MOUSE
+// ══════════════════════════════════════════════
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('auxclick',e=>e.preventDefault()); // suppress MMB new-tab
+canvas.addEventListener('mousedown',e=>{
+  mDown=true;mBtn=e.button;mLast={x:e.clientX,y:e.clientY};dragDist=0;
+  // Wand paint mode: Shift+LMB starts continuous triangle painting
+  if(toolMode==='wand'&&e.button===0&&e.shiftKey&&rawPos){
+    wandPainting=true;
+    doWandPaint(e); // select the triangle under the cursor immediately on press
+    e.preventDefault();
+    return;
+  }
+  if(toolMode==='box'&&e.button===0){
+    const r=canvas.getBoundingClientRect();
+    boxStart={x:e.clientX-r.left,y:e.clientY-r.top};
+    setBoxRect(boxStart.x,boxStart.y,boxStart.x,boxStart.y);
+    document.getElementById('box-sel-rect').style.display='block';
+  }
+  if(toolMode==='move'&&e.button===0&&rawPos){
+    // Check gizmo first
+    const gizmoHit = selSet.size>0 ? hitTestGizmo(e) : null;
+    if(gizmoHit){
+      startGizmoDrag(e, gizmoHit);
+      e.preventDefault(); return;
+    }
+    const isVertical = e.shiftKey;
+    const movingParts = selSet.size > 0;  // true = move selected parts, false = move whole model
+
+    // Choose reference position for plane construction
+    const refPos = movingParts
+      ? (() => { const c=new THREE.Vector3(); selSet.forEach(m=>c.add(m.position)); c.divideScalar(selSet.size); return c; })()
+      : group.position;
+
+    if(isVertical){
+      const camDir=new THREE.Vector3();
+      camera.getWorldDirection(camDir); camDir.y=0; camDir.normalize();
+      moveDragPlane.normal.copy(camDir);
+      moveDragPlane.constant=-refPos.dot(camDir);
+    } else {
+      moveDragPlane.normal.set(0,1,0);
+      moveDragPlane.constant = movingParts ? -refPos.y : -group.position.y;
+    }
+    const ray=new THREE.Raycaster();
+    ray.setFromCamera(toNDC(e),camera);
+    const pt=new THREE.Vector3();
+    if(ray.ray.intersectPlane(moveDragPlane,pt)){
+      moveDragStart.copy(pt);
+      if(movingParts){
+        // Store each selected mesh's start position
+        partMoveStarts.clear();
+        selSet.forEach(m=>partMoveStarts.set(m,m.position.clone()));
+      } else {
+        moveGroupStart.copy(group.position);
+      }
+      moveIsDragging=true;
+      moveIsDraggingVertical=isVertical;
+      document.body.classList.add('dragging');
+    }
+  }
+  e.preventDefault();
+});
+canvas.addEventListener('mousemove',e=>{
+  if(mDown){
+    const dx=e.clientX-mLast.x,dy=e.clientY-mLast.y;
+    dragDist+=Math.abs(dx)+Math.abs(dy);
+    // Wand paint: Shift+drag continuously adds triangles
+    if(toolMode==='wand'&&wandPainting){
+      doWandPaint(e);
+      mLast={x:e.clientX,y:e.clientY};
+      return;
+    }
+    if(toolMode==='box'&&mBtn===0&&boxStart){
+      const r=canvas.getBoundingClientRect();setBoxRect(boxStart.x,boxStart.y,e.clientX-r.left,e.clientY-r.top);
+    } else if(toolMode==='move'&&mBtn===0&&gizmoActive){
+      updateGizmoDrag(e);
+    } else if(toolMode==='move'&&mBtn===0&&moveIsDragging){
+      const ray=new THREE.Raycaster();
+      ray.setFromCamera(toNDC(e),camera);
+      const pt=new THREE.Vector3();
+      if(ray.ray.intersectPlane(moveDragPlane,pt)){
+        const delta=pt.clone().sub(moveDragStart);
+        const movingParts = partMoveStarts.size > 0;
+
+        if(movingParts){
+          // Move each selected part individually
+          partMoveStarts.forEach((startPos,m)=>{
+            if(moveIsDraggingVertical){
+              m.position.set(startPos.x, startPos.y + delta.y, startPos.z);
+            } else {
+              m.position.set(startPos.x + delta.x, startPos.y, startPos.z + delta.z);
+            }
+          });
+          // Update coord display from average position of selected parts
+          const avg=new THREE.Vector3();
+          selSet.forEach(m=>avg.add(m.position)); avg.divideScalar(selSet.size);
+          document.getElementById('mv-x').textContent=avg.x.toFixed(2);
+          document.getElementById('mv-y').textContent=avg.y.toFixed(2);
+          document.getElementById('mv-z').textContent=avg.z.toFixed(2);
+          if(moveIsDraggingVertical){
+            const slY=document.getElementById('sl-mv-y');
+            slY.value=Math.max(-500,Math.min(500,avg.y - moveOriginPos.y));
+            document.getElementById('lbl-mv-y').textContent=avg.y.toFixed(2);
+          }
+        } else {
+          // Move whole group
+          if(moveIsDraggingVertical){
+            group.position.set(moveGroupStart.x, moveGroupStart.y+delta.y, moveGroupStart.z);
+            const yVal=group.position.y-moveOriginPos.y;
+            document.getElementById('sl-mv-y').value=Math.max(-500,Math.min(500,yVal));
+            document.getElementById('lbl-mv-y').textContent=group.position.y.toFixed(2);
+          } else {
+            group.position.set(moveGroupStart.x+delta.x, moveGroupStart.y, moveGroupStart.z+delta.z);
+          }
+          updateMoveCoords();
+        }
+      }
+    } else {
+      if(mBtn===0||mBtn===1||mBtn===2){
+        if(_moveAction==='orbit'){
+          theta-=dx*0.007;phi=Math.max(0.04,Math.min(Math.PI-0.04,phi+dy*0.007));camUpdate();
+        } else if(_moveAction==='pan'){
+          panX-=dx*radius*0.0012;panY+=dy*radius*0.0012;camUpdate();
+        } else if(_moveAction==='zoom'){
+          radius*=1+dy*0.005;radius=Math.max(0.1,Math.min(50000,radius));camUpdate();
+        } else {
+          // Fallback: default orbit/pan by button
+          if(mBtn===0){theta-=dx*0.007;phi=Math.max(0.04,Math.min(Math.PI-0.04,phi+dy*0.007));camUpdate();}
+          else if(mBtn===2){panX-=dx*radius*0.0012;panY+=dy*radius*0.0012;camUpdate();}
+        }
+      }
+    }
+    mLast={x:e.clientX,y:e.clientY};
+  }else if(toolMode==='wand')doHover(e);
+});
+canvas.addEventListener('mouseup',e=>{
+  if(toolMode==='wand'&&wandPainting){
+    wandPainting=false;
+    mDown=false;mBtn=-1;
+    return;
+  }
+  if(toolMode==='wand'&&mDown&&dragDist<5&&mBtn===0)doWandClick(e);
+  else if(toolMode==='box'&&mBtn===0&&boxStart){
+    const r=canvas.getBoundingClientRect();
+    doBoxSel(boxStart.x,boxStart.y,e.clientX-r.left,e.clientY-r.top,e.shiftKey);
+    document.getElementById('box-sel-rect').style.display='none';boxStart=null;
+  }
+  if(toolMode==='move'&&gizmoActive){ endGizmoDrag(); mDown=false; mBtn=-1; return; }
+  if(toolMode==='move'&&moveIsDragging){
+    moveIsDragging=false;
+    document.body.classList.remove('dragging');
+    const movingParts = partMoveStarts.size > 0;
+    if(movingParts){
+      // Auto-bake selected parts
+      autoBakeParts([...selSet]);
+      const avg=new THREE.Vector3();
+      selSet.forEach(m=>avg.add(m.position)); avg.divideScalar(Math.max(1,selSet.size));
+      setStatus(`Moved & baked ${selSet.size} part${selSet.size!==1?'s':''}.`);
+      partMoveStarts.clear();
+    } else {
+      // Auto-bake whole-model drag
+      updateMoveCoords();
+      const dx=group.position.x-moveOriginPos.x;
+      const dy=group.position.y-moveOriginPos.y;
+      const dz=group.position.z-moveOriginPos.z;
+      if(Math.abs(dx)>1e-9||Math.abs(dy)>1e-9||Math.abs(dz)>1e-9){
+        for(const m of meshes){
+          const pa=m.geometry.attributes.position;
+          for(let i=0;i<pa.count;i++) pa.setXYZ(i,pa.getX(i)+dx,pa.getY(i)+dy,pa.getZ(i)+dz);
+          pa.needsUpdate=true; m.geometry.computeBoundingSphere();
+          m.position.sub(new THREE.Vector3(dx,dy,dz));
+          faceAdjCache.delete(m); faceNormCache.delete(m);
+        }
+        group.position.copy(moveOriginPos);
+        syncRawFromMeshes();
+        moveOffset.set(0,0,0);
+        updateMoveCoords();
+        computeExplodeOffsets(); applyExplode(explodeAmount);
+        setStatus(`Model moved & baked — Δ X:${dx.toFixed(2)} Y:${dy.toFixed(2)} Z:${dz.toFixed(2)}`);
+      }
+    }
+  }
+  mDown=false;mBtn=-1;
+});
+canvas.addEventListener('mouseleave',()=>{
+  wandPainting=false;
+  if(hovMesh&&!selSet.has(hovMesh)){hovMesh.material=hovMesh.userData.mat;hovMesh=null;}
+  if(boxStart){document.getElementById('box-sel-rect').style.display='none';boxStart=null;}
+});
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+
+  // ── Zoom-to-cursor ──────────────────────────────────────────
+  // 1. Find the world-space point currently under the mouse by
+  //    casting a ray and intersecting a plane centred on the
+  //    current orbit target, facing the camera.
+  const zoomFactor = 1 + e.deltaY * (invertZoom ? -0.001 : 0.001);
+  const oldRadius  = radius;
+  const newRadius  = Math.max(0.1, Math.min(50000, radius * zoomFactor));
+  const dRadius    = newRadius - oldRadius;   // how far we moved along the look-ray
+
+  // Ray from camera through the cursor position
+  const ndc = toNDC(e);
+  const ray = new THREE.Raycaster();
+  ray.setFromCamera(ndc, camera);
+
+  // Intersect a plane perpendicular to the view direction,
+  // located at the current orbit target (panX, panY, 0)
+  const targetPt = new THREE.Vector3(panX, panY, 0);
+  const camDir   = new THREE.Vector3();
+  camera.getWorldDirection(camDir);
+  const plane    = new THREE.Plane().setFromNormalAndCoplanarPoint(camDir, targetPt);
+
+  const cursorWorld = new THREE.Vector3();
+  const hit = ray.ray.intersectPlane(plane, cursorWorld);
+
+  if(hit){
+    // 2. Compute how much the orbit target should shift so the
+    //    cursor appears stationary after the zoom.
+    //    The fraction of radius change determines the blend toward the cursor.
+    const t = Math.abs(dRadius) / (oldRadius || 1);
+    panX += (cursorWorld.x - panX) * t;
+    panY += (cursorWorld.y - panY) * t;
+  }
+
+  radius = newRadius;
+  camUpdate();
+},{passive:false});
+
+function setBoxRect(x1,y1,x2,y2){const el=document.getElementById('box-sel-rect');el.style.left=Math.min(x1,x2)+'px';el.style.top=Math.min(y1,y2)+'px';el.style.width=Math.abs(x2-x1)+'px';el.style.height=Math.abs(y2-y1)+'px';}
+function toNDC(e){const r=canvas.getBoundingClientRect();return{x:((e.clientX-r.left)/r.width)*2-1,y:-((e.clientY-r.top)/r.height)*2+1};}
+
+// ══════════════════════════════════════════════
+// HOVER / WAND / BOX
+// ══════════════════════════════════════════════
+function doHover(e){
+  if(!meshes.length)return;
+  raycaster.setFromCamera(toNDC(e),camera);
+  const vis=meshes.filter(m=>!hiddenSet.has(m));
+  const hit=raycaster.intersectObjects(vis);
+  const m=hit.length?hit[0].object:null;
+  if(m===hovMesh)return;
+  if(hovMesh&&!selSet.has(hovMesh))hovMesh.material=hovMesh.userData.mat;
+  hovMesh=m;
+  if(hovMesh&&!selSet.has(hovMesh))hovMesh.material=MAT_HOV;
+}
+// ══════════════════════════════════════════════
+// FACE-LEVEL MAGIC WAND ENGINE
+// ══════════════════════════════════════════════
+
+// Per-mesh caches
+const faceAdjCache = new WeakMap();  // mesh → face adjacency array
+const faceNormCache = new WeakMap(); // mesh → Float32Array of per-face normals
+
+// Build a per-face normal array for a mesh
+function buildFaceNormals(mesh){
+  if(faceNormCache.has(mesh)) return faceNormCache.get(mesh);
+  const pos = mesh.geometry.attributes.position.array;
+  const F = pos.length / 9;
+  const norms = new Float32Array(F * 3);
+  for(let f=0;f<F;f++){
+    const b=f*9;
+    const ax=pos[b+3]-pos[b],   ay=pos[b+4]-pos[b+1], az=pos[b+5]-pos[b+2];
+    const bx=pos[b+6]-pos[b],   by=pos[b+7]-pos[b+1], bz=pos[b+8]-pos[b+2];
+    let nx=ay*bz-az*by, ny=az*bx-ax*bz, nz=ax*by-ay*bx;
+    const l=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
+    norms[f*3]=nx/l; norms[f*3+1]=ny/l; norms[f*3+2]=nz/l;
+  }
+  faceNormCache.set(mesh, norms);
+  return norms;
+}
+
+// Build face-adjacency map: facAdj[f] = array of face indices sharing an edge with f
+function buildFaceAdj(mesh){
+  if(faceAdjCache.has(mesh)) return faceAdjCache.get(mesh);
+  const pos = mesh.geometry.attributes.position.array;
+  const F = pos.length / 9;
+  // Quantise vertices to integer keys
+  const vmap = new Map();
+  const vid  = new Int32Array(F*3);
+  let nv = 0;
+  for(let i=0;i<F*3;i++){
+    const k=`${Math.round(pos[i*3]*1e4)},${Math.round(pos[i*3+1]*1e4)},${Math.round(pos[i*3+2]*1e4)}`;
+    if(!vmap.has(k)) vmap.set(k,nv++);
+    vid[i]=vmap.get(k);
+  }
+  // Build edge → face list
+  const ef = new Map();
+  for(let f=0;f<F;f++){
+    const a=vid[f*3],b=vid[f*3+1],c=vid[f*3+2];
+    for(const [p,q] of [[a,b],[b,c],[c,a]]){
+      const k=p<q?`${p}_${q}`:`${q}_${p}`;
+      let ar=ef.get(k); if(!ar){ar=[];ef.set(k,ar);} ar.push(f);
+    }
+  }
+  // Convert to adjacency arrays
+  const adj = Array.from({length:F},()=>[]);
+  for(const faces of ef.values()){
+    for(let i=0;i<faces.length;i++)
+      for(let j=i+1;j<faces.length;j++){
+        adj[faces[i]].push(faces[j]);
+        adj[faces[j]].push(faces[i]);
+      }
+  }
+  faceAdjCache.set(mesh, adj);
+  return adj;
+}
+
+// faceSelections: Map<Mesh, Set<number>>  — which face indices are highlighted per mesh
+// overlayMeshes:  Map<Mesh, THREE.Mesh>   — orange highlight overlay per mesh
+const faceSelections = new Map();
+const overlayMeshes  = new Map();
+
+const MAT_FACE_HL = new THREE.MeshBasicMaterial({
+  color: 0xff6600, side: THREE.DoubleSide,
+  polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+  transparent: true, opacity: 0.85
+});
+
+// Rebuild the overlay mesh for a given parent mesh from its faceSelections entry
+function rebuildOverlay(mesh){
+  // Remove old overlay
+  if(overlayMeshes.has(mesh)){
+    group.remove(overlayMeshes.get(mesh));
+    overlayMeshes.get(mesh).geometry.dispose();
+    overlayMeshes.delete(mesh);
+  }
+  const selFaces = faceSelections.get(mesh);
+  if(!selFaces || selFaces.size === 0) return;
+
+  const pos = mesh.geometry.attributes.position.array;
+  const out = new Float32Array(selFaces.size * 9);
+  let i = 0;
+  for(const f of selFaces){
+    const b=f*9;
+    out[i++]=pos[b];   out[i++]=pos[b+1]; out[i++]=pos[b+2];
+    out[i++]=pos[b+3]; out[i++]=pos[b+4]; out[i++]=pos[b+5];
+    out[i++]=pos[b+6]; out[i++]=pos[b+7]; out[i++]=pos[b+8];
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(out, 3));
+  const ov = new THREE.Mesh(geo, MAT_FACE_HL);
+  ov.position.copy(mesh.position);
+  ov.rotation.copy(mesh.rotation);
+  ov.userData.isOverlay = true;
+  group.add(ov);
+  overlayMeshes.set(mesh, ov);
+}
+
+// Clear all face selections and overlays
+function clearFaceSel(){
+  for(const [mesh] of faceSelections) rebuildOverlay(mesh); // removes overlays
+  faceSelections.clear();
+}
+
+// Total number of selected faces across all meshes
+function totalFaceSelCount(){
+  let n=0;
+  for(const s of faceSelections.values()) n+=s.size;
+  return n;
+}
+
+// Face-level flood fill on a single mesh
+// seedFace: face index clicked
+// cosThresh: dot-product threshold (1=exact, -1=all)
+// contiguous: if true BFS through adjacency; if false select ALL faces in mesh passing threshold
+function floodFillFaces(mesh, seedFace, cosThresh, contiguous){
+  const norms = buildFaceNormals(mesh);
+  const F = norms.length / 3;
+  const snx=norms[seedFace*3], sny=norms[seedFace*3+1], snz=norms[seedFace*3+2];
+
+  const result = new Set();
+
+  if(!contiguous){
+    // Non-contiguous: select every face in the mesh whose normal is within threshold of seed normal
+    for(let f=0;f<F;f++){
+      const dot = snx*norms[f*3] + sny*norms[f*3+1] + snz*norms[f*3+2];
+      if(dot >= cosThresh) result.add(f);
+    }
+  } else {
+    // Contiguous BFS: only spread through adjacency
+    const adj = buildFaceAdj(mesh);
+    result.add(seedFace);
+    const queue=[seedFace];
+    let qi=0;
+    while(qi<queue.length){
+      const cur=queue[qi++];
+      for(const nb of adj[cur]){
+        if(result.has(nb)) continue;
+        const dot = snx*norms[nb*3] + sny*norms[nb*3+1] + snz*norms[nb*3+2];
+        if(dot >= cosThresh){ result.add(nb); queue.push(nb); }
+      }
+    }
+  }
+  return result;
+}
+
+// ── Wand paint: called on every mousemove while Shift+LMB held ──────────────
+// At 0% tolerance: adds the exact triangle under the cursor.
+// At >0% tolerance: flood-fills from that triangle and merges into selection.
+function doWandPaint(e){
+  if(!meshes.length) return;
+  raycaster.setFromCamera(toNDC(e), camera);
+  const vis = meshes.filter(m => !hiddenSet.has(m));
+  const hits = raycaster.intersectObjects(vis);
+  if(!hits.length) return;
+
+  const hitMesh = hits[0].object;
+  const faceIdx = hits[0].faceIndex;
+
+  if(!faceSelections.has(hitMesh)) faceSelections.set(hitMesh, new Set());
+  const fs = faceSelections.get(hitMesh);
+
+  if(wandTolerance === 0){
+    // Single triangle per position — only add if not already present
+    if(fs.has(faceIdx)) return; // skip if already painted here
+    fs.add(faceIdx);
+  } else {
+    // Flood fill from this triangle and merge into existing selection
+    const angleDeg = (wandTolerance / 100) * 180;
+    const cosThresh = Math.cos(angleDeg * Math.PI / 180);
+    const newFaces = floodFillFaces(hitMesh, faceIdx, cosThresh, wandContiguous);
+    newFaces.forEach(f => fs.add(f));
+  }
+
+  rebuildOverlay(hitMesh);
+
+  // Update badge live while painting
+  const total = totalFaceSelCount();
+  const wb = document.getElementById('wand-tol-badge');
+  wb.classList.add('on');
+  wb.textContent = `✦ PAINTING — ${total.toLocaleString()} triangle${total!==1?'s':''} selected`;
+
+  // Refresh list counts without full rebuild (too expensive mid-drag)
+  document.getElementById('sv-sel').textContent = selSet.size.toLocaleString();
+  const hasFaceSel = faceSelections.size > 0;
+  const canDelete = selSet.size > 0 || hasFaceSel;
+  document.getElementById('btn-delete').disabled = !canDelete;
+}
+
+function doWandClick(e){
+  if(!meshes.length) return;
+  raycaster.setFromCamera(toNDC(e), camera);
+  const vis = meshes.filter(m => !hiddenSet.has(m));
+  const hit = raycaster.intersectObjects(vis);
+
+  if(!hit.length){
+    if(!e.shiftKey && !e.ctrlKey && !e.metaKey){
+      clearSel(); clearFaceSel();
+    }
+    refreshUI(); return;
+  }
+
+  const hitMesh = hit[0].object;
+  const faceIdx = hit[0].faceIndex;
+  const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+
+  if(wandTolerance === 0){
+    // ── 0% tolerance: single triangle selection ──
+    // Click = select exactly the one triangle hit (face-level)
+    // Shift+click = add/remove that single triangle
+    if(!additive){
+      // Replace any existing selection with just this one triangle
+      clearSel();
+      clearFaceSel();
+    }
+    // Add this single triangle to faceSelections for hitMesh
+    if(!faceSelections.has(hitMesh)) faceSelections.set(hitMesh, new Set());
+    const fs = faceSelections.get(hitMesh);
+    if(additive && fs.has(faceIdx)){
+      // Shift-click on already-selected triangle → deselect it
+      fs.delete(faceIdx);
+      if(fs.size === 0) faceSelections.delete(hitMesh);
+    } else {
+      fs.add(faceIdx);
+    }
+    rebuildOverlay(hitMesh);
+    const total = totalFaceSelCount();
+    const wb = document.getElementById('wand-tol-badge');
+    wb.classList.toggle('on', total > 0);
+    if(total > 0){
+      wb.textContent = `✦ WAND — ${total.toLocaleString()} triangle${total!==1?'s':''} selected`;
+    }
+    refreshUI(); return;
+  }
+
+  // ── tolerance > 0: face-level flood fill ──
+  if(!additive){ clearSel(); clearFaceSel(); }
+
+  const angleDeg = (wandTolerance / 100) * 180;
+  const cosThresh = Math.cos(angleDeg * Math.PI / 180);
+  const newFaces = floodFillFaces(hitMesh, faceIdx, cosThresh, wandContiguous);
+
+  if(!faceSelections.has(hitMesh)) faceSelections.set(hitMesh, new Set());
+  const existing = faceSelections.get(hitMesh);
+
+  if(additive && existing.size > 0){
+    const allPresent = [...newFaces].every(f => existing.has(f));
+    if(allPresent){ newFaces.forEach(f => existing.delete(f)); }
+    else          { newFaces.forEach(f => existing.add(f)); }
+  } else {
+    faceSelections.set(hitMesh, newFaces);
+  }
+
+  if(faceSelections.get(hitMesh).size === 0) faceSelections.delete(hitMesh);
+  rebuildOverlay(hitMesh);
+
+  const total = totalFaceSelCount();
+  const wb = document.getElementById('wand-tol-badge');
+  wb.classList.toggle('on', total > 0 || wandTolerance > 0);
+  wb.textContent = total > 0
+    ? `✦ WAND ${wandTolerance}% — ${total.toLocaleString()} triangle${total!==1?'s':''} selected`
+    : `✦ WAND ${wandTolerance}% [NORMAL FLOOD-FILL]${wandContiguous?' · CONTIGUOUS':''}`;
+
+  refreshUI();
+}
+function doBoxSel(x1,y1,x2,y2,add){
+  if(!meshes.length||Math.abs(x2-x1)<3&&Math.abs(y2-y1)<3) return;
+  const W=canvas.clientWidth, H=canvas.clientHeight;
+  // Convert pixel rect to NDC bounds
+  const ndcX1=(Math.min(x1,x2)/W)*2-1, ndcX2=(Math.max(x1,x2)/W)*2-1;
+  const ndcY1=1-(Math.max(y1,y2)/H)*2, ndcY2=1-(Math.min(y1,y2)/H)*2;
+
+  if(!add){ clearSel(); clearFaceSel(); }
+
+  const vis=meshes.filter(m=>!hiddenSet.has(m));
+  let totalFaces=0;
+  const vProj=new THREE.Vector3();
+
+  for(const m of vis){
+    const pos=m.geometry.attributes.position.array;
+    const F=pos.length/9;
+    const hitFaces=new Set();
+
+    for(let f=0;f<F;f++){
+      const b=f*9;
+      // Centroid of triangle in world space
+      const cx=(pos[b]+pos[b+3]+pos[b+6])/3;
+      const cy=(pos[b+1]+pos[b+4]+pos[b+7])/3;
+      const cz=(pos[b+2]+pos[b+5]+pos[b+8])/3;
+      vProj.set(cx,cy,cz).applyMatrix4(m.matrixWorld).project(camera);
+      // Check if centroid NDC is inside the box
+      if(vProj.x>=ndcX1&&vProj.x<=ndcX2&&vProj.y>=ndcY1&&vProj.y<=ndcY2&&vProj.z<=1){
+        hitFaces.add(f);
+      }
+    }
+
+    if(hitFaces.size===0) continue;
+
+    // If all faces selected, treat as whole-part selection (for simplicity in part list)
+    if(hitFaces.size===F){
+      doSelect(m);
+    } else {
+      // Face-level selection — merge into faceSelections
+      if(!faceSelections.has(m)) faceSelections.set(m, new Set());
+      const existing=faceSelections.get(m);
+      hitFaces.forEach(f=>existing.add(f));
+      rebuildOverlay(m);
+      totalFaces+=hitFaces.size;
+    }
+  }
+
+  refreshUI();
+  const partSel=selSet.size, faceSel=totalFaceSelCount();
+  if(faceSel>0){
+    setStatus(`Box selected ${faceSel.toLocaleString()} triangle${faceSel!==1?'s':''} across ${faceSelections.size} part${faceSelections.size!==1?'s':''}.`);
+    const wb=document.getElementById('wand-tol-badge');
+    wb.classList.add('on');
+    wb.textContent=`⬜ BOX — ${faceSel.toLocaleString()} tri selected`;
+  } else {
+    setStatus(`Box selected ${partSel} part${partSel!==1?'s':''}.`);
+  }
+}
+
+// ══════════════════════════════════════════════
+// SELECTION
+// ══════════════════════════════════════════════
+function doSelect(m){selSet.add(m);m.material=MAT_SEL;}
+function deselect(m){selSet.delete(m);m.material=(hovMesh===m)?MAT_HOV:m.userData.mat;}
+function clearSel(){
+  for(const m of selSet) m.material=(hovMesh===m)?MAT_HOV:m.userData.mat;
+  selSet.clear();
+  // also clear any face-level highlight overlays when clearing part selection
+  clearFaceSel();
+}
+
+// ══════════════════════════════════════════════
+// DELETE / UNDO
+// ══════════════════════════════════════════════
+function fullVisualReset(){
+  // Remove all face-selection overlays from scene
+  overlayMeshes.forEach((ov)=>{ if(group) group.remove(ov); ov.geometry.dispose(); });
+  overlayMeshes.clear();
+  faceSelections.clear();
+  // Reset hover
+  if(hovMesh){ hovMesh.material=hovMesh.userData.mat; hovMesh=null; }
+  // Hide gizmo
+  gizmoGroup.visible=false;
+  // Clear wand badge
+  const wb=document.getElementById('wand-tol-badge');
+  if(wandTolerance===0) wb.classList.remove('on');
+  else{ wb.textContent=`✦ WAND ${wandTolerance}%`; }
+  // Note: color overlays (triColorGroups) are intentionally kept — they are permanent tints
+}
+
+function doDelete(){
+  // ── Face-level deletion ──
+  if(faceSelections.size > 0){
+    const ops=[];
+    for(const [mesh, selFaces] of faceSelections){
+      if(!meshes.includes(mesh)) continue;
+      const pos=mesh.geometry.attributes.position.array;
+      const F=pos.length/9;
+      const keep=[];
+      for(let f=0;f<F;f++) if(!selFaces.has(f)) keep.push(f);
+      if(keep.length===0){
+        ops.push({type:'remove',mesh});
+        group.remove(mesh); meshes=meshes.filter(x=>x!==mesh); hiddenSet.delete(mesh);
+      } else {
+        const p2=new Float32Array(keep.length*9);
+        for(let i=0;i<keep.length;i++){const f=keep[i];for(let v=0;v<9;v++) p2[i*9+v]=pos[f*9+v];}
+        const oldGeo=mesh.geometry;
+        const newGeo=new THREE.BufferGeometry();
+        newGeo.setAttribute('position',new THREE.BufferAttribute(p2,3));
+        newGeo.computeVertexNormals(); newGeo.computeBoundingSphere();
+        mesh.geometry=newGeo; mesh.userData.fc=keep.length;
+        ops.push({type:'replace',mesh,oldGeo,newGeo});
+        faceAdjCache.delete(mesh); faceNormCache.delete(mesh);
+      }
+    }
+    undoStk.push({kind:'face',ops});
+    document.getElementById('btn-undo').disabled=false;
+    fullVisualReset();
+    // ── Critical: sync rawPos/rawNrm so re-segment uses the trimmed geometry ──
+    syncRawFromMeshes();
+    computeExplodeOffsets(); applyExplode(explodeAmount);
+    const removed=ops.filter(o=>o.type==='remove').length;
+    setStatus(`Deleted face selection — ${removed} part${removed!==1?'s':''} removed, ${ops.length-removed} trimmed.`);
+    refreshUI(); return;
+  }
+
+  // ── Part-level deletion ──
+  if(!selSet.size) return;
+  const rm=[...selSet];
+  undoStk.push({kind:'part',removed:rm});
+  for(const m of rm){group.remove(m);meshes=meshes.filter(x=>x!==m);hiddenSet.delete(m);partMoveOrigins.delete(m);}
+  selSet.clear();
+  fullVisualReset();
+  document.getElementById('btn-undo').disabled=false;
+  computeExplodeOffsets(); applyExplode(explodeAmount);
+  setStatus(`Deleted ${rm.length} part${rm.length>1?'s':''}.`);
+  refreshUI();
+}
+
+function doUndo(){
+  if(!undoStk.length) return;
+  const op=undoStk.pop();
+  if(op.kind==='face'){
+    for(const item of op.ops){
+      if(item.type==='remove'){
+        group.add(item.mesh); item.mesh.material=item.mesh.userData.mat; meshes.push(item.mesh);
+      } else {
+        item.mesh.geometry.dispose();
+        item.mesh.geometry=item.oldGeo;
+        item.mesh.userData.fc=item.oldGeo.attributes.position.array.length/9;
+        faceAdjCache.delete(item.mesh); faceNormCache.delete(item.mesh);
+      }
+    }
+    setStatus('Undo: face deletion reversed.');
+  } else {
+    const rs=op.removed;
+    for(const m of rs){group.add(m); m.material=m.userData.mat; meshes.push(m);}
+    setStatus(`Restored ${rs.length} part${rs.length>1?'s':''}.`);
+  }
+  if(!undoStk.length) document.getElementById('btn-undo').disabled=true;
+  clearSel(); clearFaceSel();
+  computeExplodeOffsets(); applyExplode(explodeAmount);
+  refreshUI();
+}
+
+// ══════════════════════════════════════════════
+// ISOLATE
+// ══════════════════════════════════════════════
+function doIsolate(){
+  if(!selSet.size)return;
+  for(const m of hiddenSet)m.material=m.userData.mat;hiddenSet.clear();
+  for(const m of meshes)if(!selSet.has(m)){hiddenSet.add(m);m.material=MAT_HIDDEN;}
+  document.getElementById('btn-showall').disabled=false;
+  setStatus(`Isolated ${selSet.size} part${selSet.size>1?'s':''}.`);refreshUI();
+}
+function doShowAll(){
+  for(const m of hiddenSet)m.material=m.userData.mat;hiddenSet.clear();
+  document.getElementById('btn-showall').disabled=true;
+  setStatus('All parts visible.');refreshUI();
+}
+
+// ══════════════════════════════════════════════
+// ORIENT — LIVE PREVIEW
+// ══════════════════════════════════════════════
+function applyOrientPreview(){
+  if(!rawPos) return;
+  const rx=orientAngles.x*Math.PI/180;
+  const ry=orientAngles.y*Math.PI/180;
+  const rz=orientAngles.z*Math.PI/180;
+  const euler=new THREE.Euler(rx,ry,rz,'XYZ');
+  const hasRot=rx!==0||ry!==0||rz!==0;
+
+  if(!orientBaked){
+    // Preview only — apply visual rotation to group/meshes; geometry unchanged
+    if(orientTarget==='model'){
+      group.rotation.copy(euler);
+    } else {
+      group.rotation.set(0,0,0);
+      for(const m of selSet) m.rotation.copy(euler);
+    }
+  }
+  // When baked: geometry already has the rotation; group.rotation stays at 0.
+  // Do NOT re-apply to group here — that would double-rotate.
+
+  const badge=document.getElementById('orient-badge');
+  badge.classList.toggle('on', hasRot);
+  if(hasRot){
+    const txt=document.getElementById('orient-badge-text')||badge;
+    txt.textContent = orientBaked
+      ? `BAKED ✓ — X:${Math.round(orientAngles.x)}° Y:${Math.round(orientAngles.y)}° Z:${Math.round(orientAngles.z)}°`
+      : `ROTATION PREVIEW — hit BAKE to make permanent`;
+  }
+}
+
+function resetOrientPreview(){
+  orientAngles={x:0,y:0,z:0};
+  orientBaked=false;
+  ['rx','ry','rz'].forEach(ax=>{
+    document.getElementById(`sl-${ax}`).value=0;
+    document.getElementById(`num-${ax}`).value=0;
+  });
+  group.rotation.set(0,0,0);
+  for(const m of meshes) m.rotation.set(0,0,0);
+  document.getElementById('orient-badge').classList.remove('on');
+  setStatus('Rotation cleared.');
+}
+
+// BAKE — writes the current rotation into each mesh's geometry vertices
+// Sliders RETAIN their current angles after baking so the user can see/adjust what was baked.
+function bakeOrient(){
+  if(!rawPos)return;
+  const rx=orientAngles.x*Math.PI/180;
+  const ry=orientAngles.y*Math.PI/180;
+  const rz=orientAngles.z*Math.PI/180;
+  if(rx===0&&ry===0&&rz===0){setStatus('Nothing to bake — rotation is 0°.');return;}
+
+  const euler=new THREE.Euler(rx,ry,rz,'XYZ');
+  const rotMat=new THREE.Matrix4().makeRotationFromEuler(euler);
+  const normMat=new THREE.Matrix3().getNormalMatrix(rotMat);
+
+  const targets=orientTarget==='model'?meshes:[...selSet];
+  for(const m of targets){
+    const posAttr=m.geometry.attributes.position;
+    const nrmAttr=m.geometry.attributes.normal;
+    const v=new THREE.Vector3(),n=new THREE.Vector3();
+    for(let i=0;i<posAttr.count;i++){
+      v.fromBufferAttribute(posAttr,i).applyMatrix4(rotMat);
+      posAttr.setXYZ(i,v.x,v.y,v.z);
+      if(nrmAttr){
+        n.fromBufferAttribute(nrmAttr,i).applyMatrix3(normMat).normalize();
+        nrmAttr.setXYZ(i,n.x,n.y,n.z);
+      }
+    }
+    posAttr.needsUpdate=true;
+    if(nrmAttr)nrmAttr.needsUpdate=true;
+    m.geometry.computeBoundingSphere();
+    // Reset the Three.js visual rotation — it's now in the geometry data
+    m.rotation.set(0,0,0);
+  }
+  group.rotation.set(0,0,0);
+
+  // Recompute explode offsets (geometry changed)
+  computeExplodeOffsets();
+  applyExplode(explodeAmount);
+
+  // Mark as baked; group.rotation stays at 0 — rotation is now IN the geometry.
+  orientBaked=true;
+  // ── Sync rawPos/rawNrm from the baked geometries ──
+  // This is the key fix: re-segmentation will now re-read the rotated vertices,
+  // not the original unrotated data that was loaded from file.
+  syncRawFromMeshes();
+  const badge=document.getElementById('orient-badge');
+  badge.classList.add('on');
+  const txt=document.getElementById('orient-badge-text')||badge;
+  txt.textContent=`BAKED ✓ — X:${Math.round(orientAngles.x)}° Y:${Math.round(orientAngles.y)}° Z:${Math.round(orientAngles.z)}°`;
+  setStatus(`Baked X:${Math.round(orientAngles.x)}° Y:${Math.round(orientAngles.y)}° Z:${Math.round(orientAngles.z)}° into ${targets.length} part${targets.length!==1?'s':''}.`);
+}
+
+function setOrientAngle(axis,val){
+  orientAngles[axis]=parseFloat(val)||0;
+  orientBaked=false; // new slider movement = new preview, not yet baked
+  const clamped=Math.max(-180,Math.min(180,orientAngles[axis]));
+  document.getElementById(`sl-r${axis}`).value=clamped;
+  document.getElementById(`num-r${axis}`).value=Math.round(orientAngles[axis]*10)/10;
+  applyOrientPreview();
+}
+
+function stepOrientAngle(axis,delta){
+  setOrientAngle(axis,orientAngles[axis]+delta);
+}
+
+function setOrientTarget(t){
+  orientTarget=t;
+  // Only reset visual rotation when NOT baked (preview mode)
+  if(!orientBaked){
+    group.rotation.set(0,0,0);
+    for(const m of meshes) m.rotation.set(0,0,0);
+  }
+  document.getElementById('orient-tgt-model').classList.toggle('orient-active',t==='model');
+  document.getElementById('orient-tgt-sel').classList.toggle('orient-active',t==='sel');
+  document.getElementById('orient-tgt-model').classList.toggle('active',false);
+  document.getElementById('orient-tgt-sel').classList.toggle('active',false);
+  document.getElementById('orient-tgt-lbl').textContent=t==='model'?'(MODEL)':'(SELECTION)';
+  applyOrientPreview();
+}
+
+// ══════════════════════════════════════════════
+// MOVE / TRANSLATE
+// ══════════════════════════════════════════════
+function updateMoveCoords(){
+  const p=group.position;
+  document.getElementById('mv-x').textContent=p.x.toFixed(2);
+  document.getElementById('mv-y').textContent=p.y.toFixed(2);
+  document.getElementById('mv-z').textContent=p.z.toFixed(2);
+  // Keep Y slider in sync with group Y position
+  const yDelta=p.y-(moveOriginPos?moveOriginPos.y:0);
+  const slY=document.getElementById('sl-mv-y');
+  if(slY&&!moveIsDragging) slY.value=Math.max(-500,Math.min(500,yDelta));
+  const lblY=document.getElementById('lbl-mv-y');
+  if(lblY) lblY.textContent=p.y.toFixed(2);
+}
+
+function resetMove(){
+  if(!rawPos) return;
+  // If parts selected and any have been moved, reset just those parts
+  const movedParts=[...selSet].filter(m=>partMoveOrigins.has(m));
+  if(selSet.size>0 && movedParts.length>0){
+    movedParts.forEach(m=>{
+      const orig=partMoveOrigins.get(m);
+      if(orig) m.position.copy(orig);
+    });
+    setStatus(`Reset position of ${movedParts.length} part${movedParts.length!==1?'s':''}.`);
+  } else {
+    // Reset whole group
+    group.position.copy(moveOriginPos);
+    moveOffset.set(0,0,0);
+    const slY=document.getElementById('sl-mv-y');
+    if(slY) slY.value=0;
+    const lblY=document.getElementById('lbl-mv-y');
+    if(lblY) lblY.textContent='0.00';
+    updateMoveCoords();
+    setStatus('Position reset to origin.');
+  }
+}
+
+// Snap selected parts (or whole model) so their lowest vertex sits at Y = 0
+function moveToGround(){
+  if(!rawPos) return;
+  const targets = selSet.size > 0 ? [...selSet] : meshes;
+  if(!targets.length) return;
+
+  targets.forEach(m=>{
+    // Find the minimum Y across all vertices in world space
+    const pa = m.geometry.attributes.position;
+    let minY = Infinity;
+    const v = new THREE.Vector3();
+    for(let i=0;i<pa.count;i++){
+      v.fromBufferAttribute(pa,i).applyMatrix4(m.matrixWorld);
+      if(v.y < minY) minY = v.y;
+    }
+    if(!isFinite(minY)) return;
+    const dy = -minY; // amount needed to lift bottom to Y=0
+    for(let i=0;i<pa.count;i++) pa.setY(i, pa.getY(i)+dy);
+    pa.needsUpdate = true;
+    m.geometry.computeBoundingSphere();
+    faceAdjCache.delete(m); faceNormCache.delete(m);
+    // Reset per-part origin since geometry moved
+    partMoveOrigins.set(m, m.position.clone());
+  });
+
+  // Also snap the group Y so it doesn't offset things
+  if(selSet.size===0){
+    // Whole-model snap — also correct group.position
+    let minGY = Infinity;
+    for(const m of meshes){
+      if(!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      const worldMin = m.geometry.boundingBox.min.y + m.position.y + group.position.y;
+      if(worldMin < minGY) minGY = worldMin;
+    }
+    // The geometry already moved, so just centre group
+    group.position.y = moveOriginPos.y;
+  }
+
+  syncRawFromMeshes();
+  computeExplodeOffsets(); applyExplode(explodeAmount);
+  updateMoveCoords();
+  const label = selSet.size>0
+    ? `${targets.length} part${targets.length!==1?'s':''}` : 'model';
+  setStatus(`⬇ Snapped ${label} to ground (Y = 0).`);
+  refreshUI();
+}
+
+function bakeMoveOffset(){
+  if(!rawPos) return;
+
+  // If parts are selected, bake only those parts' individual offsets
+  if(selSet.size>0){
+    let bakedCount=0;
+    selSet.forEach(m=>{
+      const orig=partMoveOrigins.get(m)||new THREE.Vector3(0,0,0);
+      const dx=m.position.x-orig.x;
+      const dy=m.position.y-orig.y;
+      const dz=m.position.z-orig.z;
+      if(Math.abs(dx)<1e-9&&Math.abs(dy)<1e-9&&Math.abs(dz)<1e-9) return;
+      const pa=m.geometry.attributes.position;
+      for(let i=0;i<pa.count;i++){
+        pa.setXYZ(i,pa.getX(i)+dx,pa.getY(i)+dy,pa.getZ(i)+dz);
+      }
+      pa.needsUpdate=true;
+      m.geometry.computeBoundingSphere();
+      faceAdjCache.delete(m); faceNormCache.delete(m);
+      m.position.set(0,0,0);
+      partMoveOrigins.set(m,new THREE.Vector3(0,0,0));
+      bakedCount++;
+    });
+    if(bakedCount===0){ setStatus('No translation to bake on selected parts.'); return; }
+    syncRawFromMeshes();
+    computeExplodeOffsets(); applyExplode(explodeAmount);
+    setStatus(`Baked position into ${bakedCount} part${bakedCount!==1?'s':''}.`);
+    return;
+  }
+
+  // Whole-model bake
+  const dx=group.position.x-moveOriginPos.x;
+  const dy=group.position.y-moveOriginPos.y;
+  const dz=group.position.z-moveOriginPos.z;
+  if(Math.abs(dx)<1e-9&&Math.abs(dy)<1e-9&&Math.abs(dz)<1e-9){
+    setStatus('No translation to bake.'); return;
+  }
+  for(const m of meshes){
+    const pa=m.geometry.attributes.position;
+    for(let i=0;i<pa.count;i++){
+      pa.setXYZ(i,pa.getX(i)+dx,pa.getY(i)+dy,pa.getZ(i)+dz);
+    }
+    pa.needsUpdate=true;
+    m.geometry.computeBoundingSphere();
+    m.position.sub(new THREE.Vector3(dx,dy,dz));
+  }
+  group.position.copy(moveOriginPos);
+  syncRawFromMeshes();
+  moveOffset.set(0,0,0);
+  updateMoveCoords();
+  computeExplodeOffsets(); applyExplode(explodeAmount);
+  setStatus(`Translation baked — Δ X:${dx.toFixed(2)} Y:${dy.toFixed(2)} Z:${dz.toFixed(2)}`);
+}
+
+// ── The critical fix for orientation persistence ──────────────────────────────
+// After baking orientation, rawPos/rawNrm are stale (they hold the original vertex
+// data). This function rebuilds them from the current mesh geometries so that any
+// subsequent re-segmentation uses the baked vertex positions, not the originals.
+function syncRawFromMeshes(){
+  if(!meshes.length) return;
+  // Count total triangles across all meshes
+  let totalF=0;
+  for(const m of meshes) totalF += m.geometry.attributes.position.array.length/9;
+  const newPos = new Float32Array(totalF*9);
+  const newNrm = new Float32Array(totalF*9);
+  let off=0;
+  for(const m of meshes){
+    const pa=m.geometry.attributes.position.array;
+    const na=m.geometry.attributes.normal ? m.geometry.attributes.normal.array : null;
+    for(let i=0;i<pa.length;i++) newPos[off+i]=pa[i];
+    if(na){ for(let i=0;i<na.length;i++) newNrm[off+i]=na[i]; }
+    off+=pa.length;
+  }
+  rawPos=newPos;
+  rawNrm=newNrm;
+  // Invalidate face caches since geometry changed
+  for(const m of meshes){ faceAdjCache.delete(m); faceNormCache.delete(m); }
+}
+
+// ══════════════════════════════════════════════
+// EXPLODE
+// ══════════════════════════════════════════════
+function computeExplodeOffsets(){
+  if(!meshes.length){explodeOffsets=[];return;}
+  let mx=0,my=0,mz=0;
+  for(const m of meshes){if(!m.geometry.boundingSphere)m.geometry.computeBoundingSphere();const c=m.geometry.boundingSphere.center;mx+=c.x;my+=c.y;mz+=c.z;}
+  mx/=meshes.length;my/=meshes.length;mz/=meshes.length;
+  const modelCenter=new THREE.Vector3(mx,my,mz);
+  const box=new THREE.Box3().setFromObject(group);
+  const sz=box.getSize(new THREE.Vector3());
+  explodeScale=Math.max(sz.x,sz.y,sz.z)*0.6||1;
+  explodeOffsets=meshes.map(m=>{
+    const c=m.geometry.boundingSphere.center.clone();
+    const dir=c.sub(modelCenter);const len=dir.length();
+    return len<1e-6?new THREE.Vector3(0,0,0):dir.normalize();
+  });
+}
+function applyExplode(t){
+  for(let i=0;i<meshes.length;i++){
+    const off=explodeOffsets[i]||new THREE.Vector3();
+    meshes[i].position.copy(off).multiplyScalar(t*explodeScale);
+  }
+  const sl=document.getElementById('sl-explode');
+  const pct=(t*100).toFixed(0);
+  sl.style.background=`linear-gradient(to right,var(--explode) ${pct}%,var(--border-hi) ${pct}%)`;
+}
+
+// ══════════════════════════════════════════════
+// LOAD / BUILD
+// ══════════════════════════════════════════════
+async function loadSTL(file){
+  const ld=document.getElementById('loading');
+  function msg(t,s=''){document.getElementById('ld-msg').textContent=t;document.getElementById('ld-sub').textContent=s;}
+  ld.classList.add('on');await tick();
+  if(group)scene.remove(group);
+  group=null;meshes=[];selSet.clear();hiddenSet.clear();hovMesh=null;undoStk=[];rawPos=null;rawNrm=null;
+  explodeAmount=0;explodeOffsets=[];orientAngles={x:0,y:0,z:0};orientBaked=false;moveOffset.set(0,0,0);
+  listSort='index';
+  document.getElementById('rp-sort').value='index';
+  wandTolerance=0;
+  document.getElementById('sl-wand-tol').value=0;
+  document.getElementById('lbl-wand-tol').textContent='0%';
+  document.getElementById('wand-preview-fill').style.width='0%';
+  document.getElementById('wand-tol-badge').classList.remove('on');
+  document.getElementById('btn-undo').disabled=true;
+  document.getElementById('btn-showall').disabled=true;
+  loadedFileName=file.name.replace(/\.stl$/i,'').replace(/[^a-zA-Z0-9_\-]/g,'_')||'model';
+  document.getElementById('export-prefix').value=loadedFileName;
+
+  msg('READING FILE…');await tick();
+  const buf=await file.arrayBuffer();
+  msg('PARSING GEOMETRY…');await tick();
+  let p;try{p=parseSTL(buf);}catch(e){alert('Parse error: '+e.message);ld.classList.remove('on');return;}
+  rawPos=p.pos;rawNrm=p.nrm;
+  const F=rawPos.length/9;
+  document.getElementById('sv-tri').textContent=F.toLocaleString();
+  if(!F){alert('No triangles found.');ld.classList.remove('on');return;}
+
+  await buildMeshes(msg,true);
+
+  document.getElementById('dropzone').style.display='none';
+  document.getElementById('rpanel').classList.add('on');
+  document.getElementById('lpanel').classList.remove('collapsed');
+  document.getElementById('btn-panel').classList.add('active');
+  setStatus(`${file.name}  ·  ${meshes.length} part${meshes.length>1?'s':''}  ·  ${F.toLocaleString()} tri`);
+  updateWarn();
+  ld.classList.remove('on');
+  refreshUI();
+}
+
+async function buildMeshes(msg,fitCam){
+  const pos=rawPos,nrm=rawNrm,F=pos.length/9;
+  msg(`SEGMENTING (${segMode==='angle'?'ANGLE':'CONNECT'})…`,`${F.toLocaleString()} triangles`);
+  await tick(50);
+
+  let sr=segMode==='angle'?segAngle(pos,+document.getElementById('sl-angle').value):segConn(pos);
+  const minT=+document.getElementById('sl-minTri').value;
+  if(minT>0&&sr.n>1){const vid=buildVid(pos);sr=mergeSmall(sr.comp,sr.n,F,vid,minT);}
+  const{comp,n}=sr;
+  msg(`BUILDING ${n} MESH${n>1?'ES':''}…`,'');await tick(20);
+
+  const byC=Array.from({length:n},()=>[]);
+  for(let f=0;f<F;f++)byC[comp[f]].push(f);
+  const ng=new THREE.Group(),built=[];
+  for(let c=0;c<n;c++){
+    const faces=byC[c];if(!faces.length)continue;
+    const p2=new Float32Array(faces.length*9),n2=new Float32Array(faces.length*9);
+    for(let i=0;i<faces.length;i++){const f=faces[i];for(let v=0;v<9;v++){p2[i*9+v]=pos[f*9+v];n2[i*9+v]=nrm[f*9+v];}}
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(p2,3));
+    geo.setAttribute('normal',  new THREE.BufferAttribute(n2,3));
+    geo.computeVertexNormals();geo.computeBoundingSphere();
+    const mat=matNorm(),mesh=new THREE.Mesh(geo,mat);
+    mesh.userData.mat=mat;mesh.userData.fc=faces.length;
+    ng.add(mesh);built.push(mesh);
+  }
+
+  if(group) scene.remove(group);
+  group=ng; meshes=built; selSet.clear(); hiddenSet.clear(); hovMesh=null;
+  clearFaceSel();
+  scene.add(group);
+
+  // Record each mesh's initial position as its move origin
+  partMoveOrigins.clear();
+  for(const m of meshes) partMoveOrigins.set(m, m.position.clone());
+
+  // Re-apply any active orientation preview to the new group
+  // (group was just replaced so its rotation was reset to identity)
+  if(!orientBaked && (orientAngles.x!==0||orientAngles.y!==0||orientAngles.z!==0)){
+    const rx=orientAngles.x*Math.PI/180, ry=orientAngles.y*Math.PI/180, rz=orientAngles.z*Math.PI/180;
+    if(orientTarget==='model') group.rotation.set(rx,ry,rz);
+  }
+
+  // Reset sliders
+  explodeAmount=0;
+  const slEx=document.getElementById('sl-explode');
+  slEx.value=0;document.getElementById('lbl-explode').textContent='0%';
+  slEx.style.background='linear-gradient(to right,var(--explode) 0%,var(--border-hi) 0%)';
+  document.getElementById('explode-badge').classList.remove('on');
+
+  if(fitCam){
+    // Full reset of orient state only on new file load
+    orientAngles={x:0,y:0,z:0}; orientBaked=false;
+    ['rx','ry','rz'].forEach(a=>{document.getElementById(`sl-${a}`).value=0;document.getElementById(`num-${a}`).value=0;});
+    document.getElementById('orient-badge').classList.remove('on');
+  }
+
+  if(fitCam){
+    const box=new THREE.Box3().setFromObject(group);
+    const center=box.getCenter(new THREE.Vector3());
+    const size=box.getSize(new THREE.Vector3());
+    const maxD=Math.max(size.x,size.y,size.z);
+    group.position.sub(center).setY(group.position.y+size.y/2);
+    radius=maxD*1.9;panX=0;panY=0;theta=0.4;phi=1.05;camUpdate();
+    gridHelper.scale.setScalar(Math.max(1,maxD/100));
+    axH.scale.setScalar(maxD*0.08);
+    moveOriginPos.copy(group.position);
+    moveOffset.set(0,0,0);
+    updateMoveCoords();
+  }
+  computeExplodeOffsets();
+}
+
+async function reSegment(){
+  if(!rawPos)return;
+  const ld=document.getElementById('loading');ld.classList.add('on');
+  // Remember the group's current world position so re-segment keeps the model above the grid
+  const savedGroupPos = group ? group.position.clone() : null;
+  clearSel();doShowAll();await tick(20);
+  if(!orientBaked && (orientAngles.x!==0||orientAngles.y!==0||orientAngles.z!==0)){
+    bakeOrient();
+  }
+  await buildMeshes((t,s)=>{document.getElementById('ld-msg').textContent=t;document.getElementById('ld-sub').textContent=s||'';},false);
+  // Restore the group position so the model doesn't teleport below the grid
+  if(savedGroupPos && group){
+    group.position.copy(savedGroupPos);
+    moveOriginPos.copy(savedGroupPos);
+    updateMoveCoords();
+  }
+  ld.classList.remove('on');updateWarn();
+  setStatus(`Re-segmented: ${meshes.length} part${meshes.length>1?'s':''}.`);refreshUI();
+}
+function tick(ms=30){return new Promise(r=>setTimeout(r,ms));}
+
+function updateWarn(){
+  const w=document.getElementById('seg-warn'),n=meshes.length;
+  if(!rawPos){w.classList.add('on');w.textContent='Load an STL to begin.';return;}
+  w.classList.remove('on');
+  if(n===1&&segMode==='conn'){w.classList.add('on');w.textContent='Single component — switch to ANGLE mode to split at sharp edges.';}
+  else if(n>1000){w.classList.add('on');w.textContent=`${n} parts — raise angle or Min Triangles to reduce.`;}
+}
+
+// ══════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════
+function openExportModal(preselect){
+  const list=document.getElementById('modal-part-list');list.innerHTML='';
+  const visible=meshes.filter(m=>!hiddenSet.has(m));
+  if(!visible.length){alert('No visible parts to export.');return;}
+  visible.forEach((m,i)=>{
+    const idx=meshes.indexOf(m);
+    const d=document.createElement('div');
+    d.className='pe'+(preselect&&selSet.has(m)?' highlighted':'');
+    const cb=document.createElement('input');cb.type='checkbox';cb.checked=preselect?selSet.has(m):true;cb.dataset.idx=i;
+    const nm=document.createElement('div');nm.className='pe-name';nm.textContent=`PART_${String(idx+1).padStart(3,'0')}`;
+    const tri=document.createElement('div');tri.className='pe-tri';tri.textContent=(m.userData.fc||0).toLocaleString()+'▲';
+    d.appendChild(cb);d.appendChild(nm);d.appendChild(tri);list.appendChild(d);
+  });
+  document.getElementById('progress-wrap').classList.remove('on');
+  document.getElementById('progress-fill').style.width='0%';
+  document.getElementById('modal-go').disabled=false;
+  document.getElementById('export-modal').classList.add('on');
+}
+document.getElementById('modal-sel-all').onclick=()=>document.querySelectorAll('#modal-part-list input').forEach(c=>c.checked=true);
+document.getElementById('modal-sel-none').onclick=()=>document.querySelectorAll('#modal-part-list input').forEach(c=>c.checked=false);
+
+async function doExport(){
+  const goBtn=document.getElementById('modal-go'),pw=document.getElementById('progress-wrap'),pf=document.getElementById('progress-fill'),pl=document.getElementById('progress-label');
+  const checked=[...document.querySelectorAll('#modal-part-list input[type=checkbox]')].filter(c=>c.checked);
+  if(!checked.length){alert('Select at least one part.');return;}
+  const prefix=document.getElementById('export-prefix').value.trim()||'part';
+  const centerOrigin=document.getElementById('export-origin').value==='center';
+  const visible=meshes.filter(m=>!hiddenSet.has(m));
+  goBtn.disabled=true;pw.classList.add('on');
+
+  if(checked.length===1){
+    pl.textContent='Writing STL…';pf.style.width='50%';await tick(30);
+    const m=visible[+checked[0].dataset.idx];
+    const idx=meshes.indexOf(m);
+    const buf=meshToSTLBuffer(m,centerOrigin);
+    pf.style.width='100%';pl.textContent='Done.';await tick(100);
+    downloadBuffer(buf,`${prefix}_${String(idx+1).padStart(3,'0')}.stl`,'application/octet-stream');
+    closeModal();
+  }else{
+    const zip=new JSZip();
+    for(let i=0;i<checked.length;i++){
+      const m=visible[+checked[i].dataset.idx];
+      const idx=meshes.indexOf(m);
+      const fname=`${prefix}_${String(idx+1).padStart(3,'0')}.stl`;
+      pl.textContent=`Writing ${fname}…`;pf.style.width=`${Math.round(i/checked.length*80)}%`;await tick(8);
+      zip.file(fname,meshToSTLBuffer(m,centerOrigin));
+    }
+    pl.textContent='Compressing…';pf.style.width='88%';await tick(30);
+    const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:1}});
+    pf.style.width='100%';pl.textContent=`Done — ${checked.length} files.`;await tick(200);
+    downloadBuffer(blob,`${prefix}_export.zip`,'application/zip');
+    closeModal();
+  }
+}
+function downloadBuffer(data,name,mime){
+  const url=URL.createObjectURL(data instanceof ArrayBuffer?new Blob([data],{type:mime}):data);
+  const a=document.createElement('a');a.href=url;a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function closeModal(){
+  document.getElementById('export-modal').classList.remove('on');
+  document.getElementById('modal-go').disabled=false;
+  document.getElementById('progress-wrap').classList.remove('on');
+}
+document.getElementById('modal-go').onclick=doExport;
+document.getElementById('modal-cancel').onclick=closeModal;
+document.getElementById('modal-close').onclick=closeModal;
+document.getElementById('export-modal').addEventListener('click',e=>{if(e.target===document.getElementById('export-modal'))closeModal();});
+
+// ══════════════════════════════════════════════
+// UI REFRESH
+// ══════════════════════════════════════════════
+function refreshUI(){
+  const sc=selSet.size, hasFaceSel=faceSelections.size>0, has=!!rawPos;
+  const canDelete = sc>0 || hasFaceSel;
+  document.getElementById('sv-comp').textContent=meshes.length.toLocaleString();
+  document.getElementById('sv-sel').textContent=sc.toLocaleString();
+  document.getElementById('btn-delete').disabled=!canDelete;
+  document.getElementById('btn-isolate').disabled=sc===0||!has;
+  const applyColorBtn=document.getElementById('btn-apply-tri-color');
+  if(applyColorBtn) applyColorBtn.disabled=!hasFaceSel;
+  document.getElementById('btn-export').disabled=!has;
+  document.getElementById('btn-export-all').disabled=!has;
+  document.getElementById('btn-export-sel').disabled=sc===0;
+  document.getElementById('btn-ai').disabled=!has;
+  document.getElementById('btn-explode-full').disabled=!has;
+  document.getElementById('btn-explode-reset').disabled=!has;
+  document.getElementById('sl-explode').disabled=!has;
+  document.getElementById('lp-ct').textContent=has?`(${meshes.length})`:'';
+  document.getElementById('sl-wand-tol').disabled=!has;
+
+  // orient controls
+  const orientSelOk=has&&(orientTarget==='model'||sc>0);
+  ['rx','ry','rz'].forEach(a=>{
+    document.getElementById(`sl-${a}`).disabled=!has;
+    document.getElementById(`num-${a}`).disabled=!has;
+  });
+  ['n90','n45','180','p45','p90'].forEach(s=>{
+    ['rx','ry','rz'].forEach(a=>{
+      const el=document.getElementById(`ax-${a}-${s}`);
+      if(el)el.disabled=!has;
+    });
+  });
+  document.getElementById('btn-orient-reset').disabled=!has;
+  document.getElementById('btn-move-reset').disabled=!has;
+  document.getElementById('btn-move-ground').disabled=!has;
+  document.getElementById('sl-mv-y').disabled=!has;
+
+  // Update move context message
+  const ctxMsg=document.getElementById('move-context-msg');
+  if(ctxMsg){
+    if(!has){ ctxMsg.textContent='Load a model to use the move tool.'; }
+    else if(sc>0){
+      ctxMsg.textContent=`${sc} part${sc!==1?'s':''} selected — drag moves selected parts only.`;
+      ctxMsg.style.borderColor='rgba(74,248,255,.3)';
+      ctxMsg.style.background='rgba(74,248,255,.06)';
+      ctxMsg.style.color='var(--accent)';
+    } else {
+      ctxMsg.textContent='No parts selected — drag moves the whole model.';
+      ctxMsg.style.borderColor='rgba(251,146,60,.2)';
+      ctxMsg.style.background='rgba(251,146,60,.08)';
+      ctxMsg.style.color='var(--text-label)';
+    }
+  }
+
+  const badge=document.getElementById('sel-badge');
+  badge.classList.toggle('on',sc>0);
+  if(sc>0)badge.textContent=`${sc} part${sc!==1?'s':''} selected — DEL to remove`;
+
+  // Wand badge — no position manipulation needed, flexbox handles it
+  const wb=document.getElementById('wand-tol-badge');
+  wb.classList.toggle('on',wandTolerance>0);
+
+  buildList();
+}
+
+// Range-select anchor index for shift+click in parts list
+let listAnchor=-1;
+
+function getSortedMeshes(){
+  const indexed = meshes.map((m,i)=>({m,i}));
+  if(listSort==='desc') indexed.sort((a,b)=>(b.m.userData.fc||0)-(a.m.userData.fc||0));
+  else if(listSort==='asc') indexed.sort((a,b)=>(a.m.userData.fc||0)-(b.m.userData.fc||0));
+  // 'index' keeps original order
+  return indexed;
+}
+
+function buildList(){
+  const list=document.getElementById('clist');
+  list.innerHTML='';
+  document.getElementById('rp-ct').textContent=` (${meshes.length})`;
+
+  // Count totals for display
+  const partSel=selSet.size;
+  const totalFaceTri=totalFaceSelCount();
+  const faceMeshes=faceSelections.size;
+
+  document.getElementById('rp-sel-ct').textContent=
+    partSel>0 ? `${partSel} part${partSel!==1?'s':''} selected` : '0 selected';
+
+  const faceCt=document.getElementById('rp-face-ct');
+  if(totalFaceTri>0){
+    faceCt.textContent=`${totalFaceTri.toLocaleString()} tri (${faceMeshes} mesh)`;
+    faceCt.style.display='';
+  } else {
+    faceCt.textContent='';
+    faceCt.style.display='none';
+  }
+
+  // Action bar: show when part OR face selection active
+  const hasAnySelection = partSel>0 || totalFaceTri>0;
+  document.getElementById('rp-action-bar').classList.toggle('on', hasAnySelection);
+  // Update delete button label to reflect what will be deleted
+  const delBtn=document.getElementById('rp-del-btn');
+  const delCt=document.getElementById('rp-del-ct');
+  if(totalFaceTri>0 && partSel===0){
+    delBtn.firstChild.textContent='🗑 DELETE TRIANGLES (';
+    delCt.textContent=totalFaceTri.toLocaleString();
+    delBtn.lastChild.textContent=')';
+  } else {
+    delBtn.firstChild.textContent='🗑 DELETE SELECTED (';
+    delCt.textContent=partSel;
+    delBtn.lastChild.textContent=')';
+  }
+
+  const sorted=getSortedMeshes();
+  sorted.forEach(({m,i},rowIdx)=>{
+    const isSel=selSet.has(m);
+    const isHid=hiddenSet.has(m);
+    const hasFaceSel=faceSelections.has(m) && faceSelections.get(m).size>0;
+
+    const d=document.createElement('div');
+    let cls='ci';
+    if(isSel)       cls+=' sel';
+    if(hasFaceSel)  cls+=' face-sel';
+    if(isHid)       cls+=' iso-hidden';
+    d.className=cls;
+    d.dataset.rowIdx=rowIdx;
+    d.dataset.meshIdx=i;
+
+    const cb=document.createElement('input');
+    cb.type='checkbox'; cb.className='ci-cb'; cb.checked=isSel; cb.tabIndex=-1;
+
+    const dot=document.createElement('div'); dot.className='ci-dot';
+    const nm=document.createElement('div'); nm.className='ci-name';
+    nm.textContent=`PART_${String(i+1).padStart(3,'0')}`;
+
+    const tri=document.createElement('div'); tri.className='ci-tri';
+
+    if(hasFaceSel){
+      const faceCount=faceSelections.get(m).size;
+      tri.innerHTML=`<span class="ci-face-badge">${faceCount.toLocaleString()}▲ sel</span>`;
+    } else {
+      tri.textContent=(m.userData.fc||0).toLocaleString()+'▲';
+    }
+
+    d.appendChild(cb); d.appendChild(dot); d.appendChild(nm); d.appendChild(tri);
+
+    d.addEventListener('click',e=>{
+      e.preventDefault();
+      const rIdx=+d.dataset.rowIdx;
+      if(e.shiftKey&&listAnchor>=0){
+        const lo=Math.min(listAnchor,rIdx),hi=Math.max(listAnchor,rIdx);
+        if(!e.ctrlKey&&!e.metaKey)clearSel();
+        sorted.slice(lo,hi+1).forEach(({m:sm})=>doSelect(sm));
+      } else if(e.ctrlKey||e.metaKey){
+        selSet.has(m)?deselect(m):doSelect(m); listAnchor=rIdx;
+      } else {
+        if(selSet.has(m)&&selSet.size===1){deselect(m);listAnchor=-1;}
+        else{clearSel();doSelect(m);listAnchor=rIdx;}
+      }
+      refreshUI();
+    });
+
+    cb.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(cb.checked)doSelect(m); else deselect(m);
+      listAnchor=+d.dataset.rowIdx;
+      refreshUI();
+    });
+
+    list.appendChild(d);
+  });
+}
+
+// Sort cycle
+function cycleSortMode(){} // kept for any old references — select now drives sorting
+
+// Sort dropdown handler
+document.getElementById('rp-sort').addEventListener('change', function(){
+  listSort = this.value;
+  buildList();
+});
+
+// Bulk selection helpers
+function selectAll(){clearSel();meshes.forEach(m=>doSelect(m));listAnchor=-1;refreshUI();}
+function selectVisible(){clearSel();meshes.filter(m=>!hiddenSet.has(m)).forEach(m=>doSelect(m));listAnchor=-1;refreshUI();}
+function selectNone(){clearSel();listAnchor=-1;refreshUI();}
+function invertSel(){
+  const prev=new Set(selSet);
+  clearSel();
+  meshes.forEach(m=>{ if(!prev.has(m)) doSelect(m); });
+  listAnchor=-1;
+  refreshUI();
+}
+function setStatus(t){document.getElementById('s-msg').textContent=t;}
+
+// ══════════════════════════════════════════════
+// TOOL MODE
+// ══════════════════════════════════════════════
+function setTool(t){
+  toolMode=t;
+  document.body.className=t==='wand'?'wand':t==='box'?'boxsel':t==='move'?'move':'';
+  ['btn-orbit','btn-wand','btn-box','btn-move'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.classList.remove('active','warn-active');
+  });
+  const me=document.getElementById('s-mode');
+  if(t==='orbit'){document.getElementById('btn-orbit').classList.add('active');me.style.color='var(--accent)';}
+  else if(t==='wand'){document.getElementById('btn-wand').classList.add('active');me.style.color='var(--accent)';}
+  else if(t==='box'){document.getElementById('btn-box').classList.add('warn-active');me.style.color='var(--warn)';}
+  else if(t==='move'){document.getElementById('btn-move').classList.add('active');me.style.color='var(--move)';}
+  me.textContent=t==='orbit'?'ORBIT':t==='wand'?'WAND SELECT':t==='box'?'BOX SELECT':'MOVE';
+  if(t!=='wand'&&hovMesh&&!selSet.has(hovMesh)){hovMesh.material=hovMesh.userData.mat;hovMesh=null;}
+  if(t!=='move'){ gizmoGroup.visible=false; }
+  else { updateGizmoPosition(); }
+  const h=document.getElementById('hints');
+  h.classList.add('on'); // ensure visible
+  // Build new hint items (drag handle is a permanent first child, preserved)
+  let hItems='';
+  if(t==='orbit')  hItems='<div class="hi"><span>LMB</span> ORBIT</div><div class="hi"><span>RMB</span> PAN</div><div class="hi"><span>SCROLL</span> ZOOM</div><div class="hi"><span>W</span> WAND</div><div class="hi"><span>B</span> BOX</div><div class="hi"><span>M</span> MOVE</div>';
+  else if(t==='wand') hItems='<div class="hi"><span>CLICK</span> SELECT</div><div class="hi"><span>SHIFT+CLICK</span> ADD TRI</div><div class="hi"><span>SHIFT+DRAG</span> PAINT TRIS</div><div class="hi"><span>CTRL+CLICK</span> TOGGLE</div><div class="hi"><span>DEL</span> DELETE</div>';
+  else if(t==='box')  hItems='<div class="hi"><span class="w">DRAG</span> BOX SELECT</div><div class="hi"><span>SHIFT</span> ADD</div><div class="hi"><span>DEL</span> DELETE TRI</div><div class="hi"><span>W</span> WAND</div><div class="hi"><span>O</span> ORBIT</div>';
+  else if(t==='move') hItems='<div class="hi"><span>LMB DRAG</span> SLIDE ON GRID</div><div class="hi"><span>SHIFT+DRAG</span> VERTICAL</div><div class="hi"><span>GIZMO</span> AXIS MOVE</div><div class="hi"><span>O</span> ORBIT</div>';
+  // Remove all non-handle children then append new items
+  const handle=h.querySelector('.hud-drag-handle');
+  h.innerHTML='';
+  if(handle) h.appendChild(handle);
+  h.insertAdjacentHTML('beforeend',hItems);
+}
+function setSegMode(m){
+  segMode=m;
+  document.getElementById('meth-conn').classList.toggle('active',m==='conn');
+  document.getElementById('meth-angle').classList.toggle('active',m==='angle');
+  const d=m!=='angle';
+  document.getElementById('sl-angle').disabled=d;
+  document.getElementById('sl-minTri').disabled=d;
+}
+
+// ══════════════════════════════════════════════
+// KEYBOARD
+// ══════════════════════════════════════════════
+window.addEventListener('keydown',e=>{
+  if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
+  if(e.key==='w'||e.key==='W')setTool('wand');
+  if(e.key==='o'||e.key==='O')setTool('orbit');
+  if(e.key==='b'||e.key==='B')setTool('box');
+  if(e.key==='m'||e.key==='M')setTool('move');
+  if(e.key==='Delete'||e.key==='Backspace')doDelete();
+  if(e.key==='Escape'){clearSel();doShowAll();refreshUI();}
+  if(e.key==='i'||e.key==='I'){if(selSet.size)doIsolate();}
+  if(e.key==='e'||e.key==='E'){if(rawPos)openExportModal(selSet.size>0);}
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();doUndo();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='a'){e.preventDefault();selectAll();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='d'){e.preventDefault();selectNone();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='i'){e.preventDefault();invertSel();}
+});
+
+// ══════════════════════════════════════════════
+// BUTTON WIRING
+// ══════════════════════════════════════════════
+document.getElementById('btn-orbit').onclick=()=>setTool('orbit');
+document.getElementById('btn-wand').onclick=()=>setTool('wand');
+document.getElementById('btn-box').onclick=()=>setTool('box');
+document.getElementById('btn-move').onclick=()=>setTool('move');
+document.getElementById('btn-delete').onclick=doDelete;
+document.getElementById('btn-undo').onclick=doUndo;
+document.getElementById('btn-isolate').onclick=doIsolate;
+document.getElementById('btn-showall').onclick=doShowAll;
+document.getElementById('btn-export').onclick=()=>openExportModal(selSet.size>0);
+document.getElementById('btn-export-all').onclick=()=>openExportModal(false);
+document.getElementById('btn-export-sel').onclick=()=>openExportModal(true);
+document.getElementById('btn-move-reset').onclick=resetMove;
+document.getElementById('btn-move-ground').onclick=moveToGround;
+document.getElementById('sl-mv-y').addEventListener('input',function(){
+  if(!rawPos)return;
+  const targetY=moveOriginPos.y+(+this.value);
+  group.position.y=targetY;
+  document.getElementById('lbl-mv-y').textContent=targetY.toFixed(2);
+  updateMoveCoords();
+});
+// Parts panel multi-select controls
+document.getElementById('rp-all').onclick=selectAll;
+document.getElementById('rp-inv').onclick=invertSel;
+document.getElementById('rp-vis').onclick=selectVisible;
+document.getElementById('rp-none').onclick=selectNone;
+document.getElementById('rp-del-btn').onclick=doDelete;
+document.getElementById('rp-iso-btn').onclick=doIsolate;
+
+// ── WAND TOLERANCE CONTROLS ──
+document.getElementById('sl-wand-tol').addEventListener('input',function(){
+  wandTolerance=+this.value;
+  document.getElementById('lbl-wand-tol').textContent=wandTolerance+'%';
+  document.getElementById('wand-preview-fill').style.width=wandTolerance+'%';
+  const badge=document.getElementById('wand-tol-badge');
+  if(wandTolerance>0){
+    badge.classList.add('on');
+    const total=totalFaceSelCount();
+    badge.textContent = total>0
+      ? `✦ WAND ${wandTolerance}% — ${total.toLocaleString()} tri selected`
+      : `✦ WAND ${wandTolerance}% [NORMAL FLOOD-FILL]${wandContiguous?' · CONTIGUOUS':''}`;
+    badge.style.right='22px'; badge.style.left='auto';
+  }else{
+    clearFaceSel();
+    badge.classList.remove('on');
+  }
+});
+
+document.getElementById('chk-contiguous').addEventListener('change',function(){
+  wandContiguous=this.checked;
+  if(wandTolerance>0){
+    const badge=document.getElementById('wand-tol-badge');
+    const total=totalFaceSelCount();
+    badge.textContent = total>0
+      ? `✦ WAND ${wandTolerance}% — ${total.toLocaleString()} tri selected`
+      : `✦ WAND ${wandTolerance}% [NORMAL FLOOD-FILL]${wandContiguous?' · CONTIGUOUS':''}`;
+  }
+});
+
+
+// Orient axis sliders — live preview on `input`, auto-bake on `change` (mouse release)
+['rx','ry','rz'].forEach(ax=>{
+  const axis=ax[1];
+  document.getElementById(`sl-${ax}`).addEventListener('input',function(){
+    setOrientAngle(axis,+this.value); // live preview only, no bake yet
+  });
+  document.getElementById(`sl-${ax}`).addEventListener('change',function(){
+    setOrientAngle(axis,+this.value);
+    // Auto-bake on slider release if there's a non-zero rotation
+    if(orientAngles.x!==0||orientAngles.y!==0||orientAngles.z!==0) bakeOrient();
+  });
+  document.getElementById(`num-${ax}`).addEventListener('change',function(){
+    setOrientAngle(axis,+this.value);
+    if(orientAngles.x!==0||orientAngles.y!==0||orientAngles.z!==0) bakeOrient();
+  });
+});
+// Orient quick buttons — set angle then immediately bake
+[['rx','x'],['ry','y'],['rz','z']].forEach(([id,axis])=>{
+  const fire=(delta)=>()=>{ stepOrientAngle(axis,delta); if(orientAngles.x!==0||orientAngles.y!==0||orientAngles.z!==0) bakeOrient(); };
+  document.getElementById(`ax-${id}-n90`).onclick=fire(-90);
+  document.getElementById(`ax-${id}-n45`).onclick=fire(-45);
+  document.getElementById(`ax-${id}-180`).onclick=fire(180);
+  document.getElementById(`ax-${id}-p45`).onclick=fire(+45);
+  document.getElementById(`ax-${id}-p90`).onclick=fire(+90);
+});
+document.getElementById('btn-orient-reset').onclick=resetOrientPreview;
+document.getElementById('orient-tgt-model').onclick=()=>setOrientTarget('model');
+document.getElementById('orient-tgt-sel').onclick=()=>setOrientTarget('sel');
+
+// Explode
+document.getElementById('sl-explode').addEventListener('input',function(){
+  explodeAmount=+this.value/100;
+  document.getElementById('lbl-explode').textContent=this.value+'%';
+  applyExplode(explodeAmount);
+  document.getElementById('explode-badge').classList.toggle('on',explodeAmount>0);
+});
+document.getElementById('btn-explode-full').onclick=()=>{
+  explodeAmount=1;const sl=document.getElementById('sl-explode');sl.value=100;
+  document.getElementById('lbl-explode').textContent='100%';applyExplode(1);
+  document.getElementById('explode-badge').classList.add('on');
+};
+document.getElementById('btn-explode-reset').onclick=()=>{
+  explodeAmount=0;const sl=document.getElementById('sl-explode');sl.value=0;
+  document.getElementById('lbl-explode').textContent='0%';
+  sl.style.background='linear-gradient(to right,var(--explode) 0%,var(--border-hi) 0%)';
+  applyExplode(0);document.getElementById('explode-badge').classList.remove('on');
+};
+
+// Seg
+document.getElementById('btn-panel').onclick=()=>{
+  const lp=document.getElementById('lpanel');
+  const c=lp.classList.toggle('collapsed');
+  document.getElementById('btn-panel').classList.toggle('active',!c);refreshUI();
+};
+document.getElementById('meth-conn').onclick=()=>setSegMode('conn');
+document.getElementById('meth-angle').onclick=()=>setSegMode('angle');
+document.getElementById('sl-angle').oninput=function(){document.getElementById('lbl-angle').textContent=this.value+'°';};
+document.getElementById('sl-minTri').oninput=function(){document.getElementById('lbl-minTri').textContent=this.value;};
+document.getElementById('btn-reseg').onclick=()=>{if(!rawPos){document.getElementById('file-input').click();return;}reSegment();};
+
+// Load
+document.getElementById('btn-load').onclick=()=>{
+  if(group){
+    scene.remove(group);group=null;meshes=[];selSet.clear();hiddenSet.clear();hovMesh=null;undoStk=[];rawPos=null;rawNrm=null;explodeAmount=0;explodeOffsets=[];orientAngles={x:0,y:0,z:0};orientBaked=false;moveOffset.set(0,0,0);
+    listSort='index';
+    document.getElementById('rp-sort').value='index';
+    document.getElementById('dropzone').style.display='';
+    document.getElementById('rpanel').classList.remove('on');
+    document.getElementById('lpanel').classList.add('collapsed');
+    document.getElementById('btn-panel').classList.remove('active');
+    document.getElementById('sel-badge').classList.remove('on');
+    document.getElementById('explode-badge').classList.remove('on');
+    document.getElementById('orient-badge').classList.remove('on');
+    ['sv-comp','sv-tri'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('sv-sel').textContent='0';
+    ['btn-delete','btn-undo','btn-isolate','btn-showall','btn-export','btn-export-all','btn-export-sel','btn-explode-full','btn-explode-reset'].forEach(id=>document.getElementById(id).disabled=true);
+    document.getElementById('sl-explode').disabled=true;document.getElementById('sl-explode').value=0;
+    document.getElementById('lbl-explode').textContent='0%';
+    document.getElementById('lp-ct').textContent='';
+    document.getElementById('seg-warn').classList.add('on');
+    document.getElementById('seg-warn').textContent='Load an STL to begin.';
+    setStatus('Load an STL file to begin');
+    buildList();
+  }
+  document.getElementById('file-input').click();
+};
+document.getElementById('browse-btn').onclick=()=>document.getElementById('file-input').click();
+document.getElementById('file-input').onchange=e=>{const f=e.target.files[0];if(f)loadSTL(f);e.target.value='';};
+document.body.addEventListener('dragover',e=>{e.preventDefault();document.getElementById('dropzone').style.background='rgba(74,248,255,.04)';});
+document.body.addEventListener('dragleave',()=>document.getElementById('dropzone').style.background='');
+document.body.addEventListener('drop',e=>{
+  e.preventDefault();document.getElementById('dropzone').style.background='';
+  const f=e.dataTransfer.files[0];
+  if(f&&f.name.toLowerCase().endsWith('.stl'))loadSTL(f);
+  else if(f)alert('Please drop a .stl file.');
+});
+
+// ══════════════════════════════════════════════
+// AI ADVISOR — GEOMETRY ANALYSIS ENGINE
+// ══════════════════════════════════════════════
+
+function analyzeGeometry(){
+  if(!rawPos||!rawPos.length) return null;
+  const pos=rawPos;
+  const F=pos.length/9;
+  const box=new THREE.Box3().setFromObject(group);
+  const size=box.getSize(new THREE.Vector3());
+  const maxDim=Math.max(size.x,size.y,size.z);
+  const minDim=Math.min(size.x,size.y,size.z);
+
+  // 1. Sharp-edge density — count edges where adjacent face normals deviate > threshold
+  const norms=new Float32Array(F*3);
+  for(let f=0;f<F;f++){
+    const b=f*9;
+    const ax=pos[b+3]-pos[b], ay=pos[b+4]-pos[b+1], az=pos[b+5]-pos[b+2];
+    const bx=pos[b+6]-pos[b], by=pos[b+7]-pos[b+1], bz=pos[b+8]-pos[b+2];
+    let nx=ay*bz-az*by, ny=az*bx-ax*bz, nz=ax*by-ay*bx;
+    const l=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
+    norms[f*3]=nx/l; norms[f*3+1]=ny/l; norms[f*3+2]=nz/l;
+  }
+
+  // Build edge-face map (sample up to 100k faces for speed)
+  const sampleF=Math.min(F,100000);
+  const vmap=new Map(); const vid=new Int32Array(sampleF*3); let nv=0;
+  for(let i=0;i<sampleF*3;i++){
+    const k=`${Math.round(pos[i*3]*1e3)},${Math.round(pos[i*3+1]*1e3)},${Math.round(pos[i*3+2]*1e3)}`;
+    if(!vmap.has(k)) vmap.set(k,nv++); vid[i]=vmap.get(k);
+  }
+  const ef=new Map();
+  for(let f=0;f<sampleF;f++){
+    const a=vid[f*3],b=vid[f*3+1],c=vid[f*3+2];
+    for(const [p,q] of [[a,b],[b,c],[c,a]]){
+      const k=p<q?`${p}_${q}`:`${q}_${p}`;
+      let ar=ef.get(k);if(!ar){ar=[];ef.set(k,ar);} ar.push(f);
+    }
+  }
+
+  // Measure sharpness distribution
+  const angleHistogram=new Array(18).fill(0); // 0-10, 10-20, ... 170-180 degrees
+  let sharedEdgeCount=0;
+  for(const faces of ef.values()){
+    if(faces.length<2) continue;
+    sharedEdgeCount++;
+    for(let i=0;i<faces.length;i++) for(let j=i+1;j<faces.length;j++){
+      const f1=faces[i],f2=faces[j];
+      const dot=Math.max(-1,Math.min(1,
+        norms[f1*3]*norms[f2*3]+norms[f1*3+1]*norms[f2*3+1]+norms[f1*3+2]*norms[f2*3+2]
+      ));
+      const angle=Math.acos(dot)*180/Math.PI;
+      const bin=Math.min(17,Math.floor(angle/10));
+      angleHistogram[bin]++;
+    }
+  }
+
+  // 2. Normal diversity — how many distinct normal directions?
+  const normalBuckets=new Map();
+  for(let f=0;f<sampleF;f++){
+    const nx=Math.round(norms[f*3]*4)/4;
+    const ny=Math.round(norms[f*3+1]*4)/4;
+    const nz=Math.round(norms[f*3+2]*4)/4;
+    const k=`${nx},${ny},${nz}`;
+    normalBuckets.set(k,(normalBuckets.get(k)||0)+1);
+  }
+  const uniqueNormals=normalBuckets.size;
+  const sortedNormals=[...normalBuckets.entries()].sort((a,b)=>b[1]-a[1]);
+  const topNormalCoverage=sortedNormals.slice(0,6).reduce((s,[,v])=>s+v,0)/sampleF;
+  const isMostlyFlat=topNormalCoverage>0.7; // >70% of faces point in <6 directions → mechanical/flat
+
+  // 3. Connectivity — does Connect mode give >1 part?
+  const {n:connParts}=segConn(rawPos);
+  const hasDisconnectedBodies=connParts>1;
+
+  // 4. Sharp edge density at various angle thresholds
+  const totalSharedEdges=sharedEdgeCount||1;
+  function edgesSharpAtDeg(deg){
+    const cosDeg=Math.cos(deg*Math.PI/180);
+    let cnt=0;
+    for(const faces of ef.values()){
+      if(faces.length<2) continue;
+      for(let i=0;i<faces.length;i++) for(let j=i+1;j<faces.length;j++){
+        const f1=faces[i],f2=faces[j];
+        const dot=norms[f1*3]*norms[f2*3]+norms[f1*3+1]*norms[f2*3+1]+norms[f1*3+2]*norms[f2*3+2];
+        if(dot<cosDeg) cnt++;
+      }
+    }
+    return cnt/totalSharedEdges;
+  }
+  const sharpAt15=edgesSharpAtDeg(15);
+  const sharpAt30=edgesSharpAtDeg(30);
+  const sharpAt45=edgesSharpAtDeg(45);
+
+  // 5. Aspect ratio — indicates elongated vs blocky
+  const aspectRatio=maxDim/(minDim||1);
+
+  // 6. Face size uniformity (variance in triangle areas)
+  let areaSum=0, areaMax=0;
+  const areas=new Float32Array(sampleF);
+  for(let f=0;f<sampleF;f++){
+    const b=f*9;
+    const ax=pos[b+3]-pos[b],ay=pos[b+4]-pos[b+1],az=pos[b+5]-pos[b+2];
+    const bx=pos[b+6]-pos[b],by=pos[b+7]-pos[b+1],bz=pos[b+8]-pos[b+2];
+    const cx=ay*bz-az*by,cy=az*bx-ax*bz,cz=ax*by-ay*bx;
+    const a=Math.sqrt(cx*cx+cy*cy+cz*cz)*0.5;
+    areas[f]=a; areaSum+=a; if(a>areaMax) areaMax=a;
+  }
+  const areaMean=areaSum/sampleF;
+  let areaVar=0;
+  for(let f=0;f<sampleF;f++) areaVar+=(areas[f]-areaMean)**2;
+  areaVar/=sampleF;
+  const areaCV=Math.sqrt(areaVar)/(areaMean||1); // coefficient of variation
+
+  // 7. Estimate good angle threshold
+  let suggestedAngle=30;
+  let suggestedMode=hasDisconnectedBodies?'conn':'angle';
+  if(isMostlyFlat && !hasDisconnectedBodies){ suggestedAngle=15; }
+  else if(sharpAt30>0.3){ suggestedAngle=30; }
+  else if(sharpAt45>0.2){ suggestedAngle=45; }
+  else { suggestedAngle=20; }
+
+  // Estimate expected part count at suggested angle
+  const testResult=segAngle(rawPos,suggestedAngle);
+  const expectedParts=testResult.n;
+
+  return {
+    F,connParts,hasDisconnectedBodies,
+    uniqueNormals,isMostlyFlat,topNormalCoverage,
+    sharpAt15,sharpAt30,sharpAt45,
+    angleHistogram,totalSharedEdges,
+    aspectRatio,areaCV,
+    suggestedMode,suggestedAngle,expectedParts,
+    size:{x:size.x.toFixed(1),y:size.y.toFixed(1),z:size.z.toFixed(1)},
+    maxDim:maxDim.toFixed(1),
+    fileName:loadedFileName
+  };
+}
+
+// ── Generate recommendations from analysis ─────────────
+function buildRecommendations(a){
+  const recs=[];
+
+  // Rec 1: Connectivity
+  if(a.hasDisconnectedBodies){
+    recs.push({
+      priority:'high',
+      title:'Use CONNECT Mode',
+      body:`Your model contains <strong>${a.connParts} physically separate bodies</strong> with no shared vertices. The CONNECT segmentation mode will split these cleanly into individual parts — no angle threshold needed.`,
+      action:'Apply CONNECT Mode',
+      fn:()=>{ setSegMode('conn'); }
+    });
+  }
+
+  // Rec 2: Angle mode for single bodies
+  if(!a.hasDisconnectedBodies){
+    const pct=(a.sharpAt30*100).toFixed(0);
+    recs.push({
+      priority:'high',
+      title:`ANGLE Mode at ${a.suggestedAngle}°`,
+      body:`Your model is one continuous mesh. ANGLE mode at <strong>${a.suggestedAngle}°</strong> detects ${pct}% of edges as sharp boundaries, which should produce approximately <strong>${a.expectedParts} parts</strong>. ${a.isMostlyFlat?'The geometry is mostly flat-faced (mechanical/CAD), which responds well to low angles (10–20°).':'The model has curved surfaces — moderate angles (25–40°) will avoid over-splitting.'}`,
+      action:`Set Angle Mode ${a.suggestedAngle}°`,
+      fn:()=>{
+        setSegMode('angle');
+        const sl=document.getElementById('sl-angle');
+        sl.value=a.suggestedAngle;
+        document.getElementById('lbl-angle').textContent=a.suggestedAngle+'°';
+      }
+    });
+  }
+
+  // Rec 3: Min triangles merge
+  if(a.expectedParts>20 || a.areaCV>3){
+    const minTri=Math.max(10,Math.floor(a.F/a.expectedParts*0.05));
+    recs.push({
+      priority:'med',
+      title:'Merge Micro-Fragments',
+      body:`With <strong>${a.expectedParts} parts</strong> expected${a.areaCV>3?' and high triangle-size variance':''},
+small fragments may appear. Setting Min Triangles to <strong>${minTri}</strong> will absorb slivers into their largest neighbour automatically.`,
+      action:`Set Min Triangles → ${minTri}`,
+      fn:()=>{
+        const sl=document.getElementById('sl-minTri');
+        sl.value=minTri;
+        document.getElementById('lbl-minTri').textContent=minTri;
+      }
+    });
+  }
+
+  // Rec 4: Explode suggestion
+  if(a.expectedParts>3||a.hasDisconnectedBodies){
+    recs.push({
+      priority:'med',
+      title:'Use Explode View for Selection',
+      body:`After segmenting, use <strong>Explode View</strong> to spread the ${a.expectedParts||a.connParts} parts apart radially. This gives the wand tool clear line-of-sight to each individual piece — especially useful when parts nest tightly together.`,
+      action:'Open Explode Panel',
+      fn:()=>{ document.getElementById('lpanel').classList.remove('collapsed'); document.getElementById('btn-panel').classList.add('active'); }
+    });
+  }
+
+  // Rec 5: Wand tolerance guidance
+  if(a.isMostlyFlat){
+    recs.push({
+      priority:'low',
+      title:'Wand at 5–15% for Flat Surfaces',
+      body:`The model is predominantly <strong>flat-faced</strong> (${(a.topNormalCoverage*100).toFixed(0)}% of faces share fewer than 6 normal directions). The wand will select entire flat regions at <strong>5–15% tolerance</strong> — perfect for removing individual panels or faces.`,
+      action:'Set Wand to 10%',
+      fn:()=>{
+        const sl=document.getElementById('sl-wand-tol');
+        sl.value=10; wandTolerance=10;
+        document.getElementById('lbl-wand-tol').textContent='10%';
+        document.getElementById('wand-preview-fill').style.width='10%';
+        document.getElementById('wand-tol-badge').classList.add('on');
+        document.getElementById('wand-tol-badge').textContent=`✦ WAND 10% [NORMAL FLOOD-FILL]`;
+      }
+    });
+  } else {
+    recs.push({
+      priority:'low',
+      title:'Wand at 20–40% for Curved Surfaces',
+      body:`The model has <strong>curved geometry</strong> (${a.uniqueNormals.toLocaleString()} unique normal directions). A wand tolerance of <strong>20–40%</strong> will spread across gently curved surfaces while stopping at sharp edges. Start at 25% and adjust.`,
+      action:'Set Wand to 25%',
+      fn:()=>{
+        const sl=document.getElementById('sl-wand-tol');
+        sl.value=25; wandTolerance=25;
+        document.getElementById('lbl-wand-tol').textContent='25%';
+        document.getElementById('wand-preview-fill').style.width='25%';
+        document.getElementById('wand-tol-badge').classList.add('on');
+        document.getElementById('wand-tol-badge').textContent=`✦ WAND 25% [NORMAL FLOOD-FILL]`;
+      }
+    });
+  }
+
+  return recs;
+}
+
+// ── Fetch Claude narrative ─────────────────────────────
+// ══════════════════════════════════════════════
+// ANTHROPIC API KEY MANAGEMENT
+// ══════════════════════════════════════════════
+// Key is stored in localStorage so the user only enters it once.
+// Never sent anywhere except directly to api.anthropic.com.
+const STORAGE_KEY='stl_wand_anthropic_key';
+
+function getStoredApiKey(){ return localStorage.getItem(STORAGE_KEY)||''; }
+function setStoredApiKey(k){ if(k) localStorage.setItem(STORAGE_KEY,k); else localStorage.removeItem(STORAGE_KEY); }
+
+// Prompt the user for their API key — returns the key string or null if cancelled
+async function promptForApiKey(required=false){
+  return new Promise(resolve=>{
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML=`
+      <div style="background:#08080f;border:1px solid var(--ai);width:420px;padding:24px;position:relative;font-family:var(--ff-mono);">
+        <div style="font-size:13px;color:var(--ai);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;">◈ Anthropic API Key</div>
+        <div style="font-size:10px;color:var(--text-label);line-height:1.7;margin-bottom:14px;">
+          The AI Advisor sends geometry data to <strong style="color:var(--text-hi)">api.anthropic.com</strong> to generate a plain-language analysis of your model.<br><br>
+          Your key is stored <strong style="color:var(--text-hi)">only in your browser</strong> (localStorage) and is never sent anywhere except directly to Anthropic's API.<br><br>
+          Get a free key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--ai);">console.anthropic.com</a>
+        </div>
+        <input id="api-key-input" type="password"
+          placeholder="sk-ant-api03-…"
+          style="width:100%;height:36px;background:rgba(255,255,255,.05);border:1px solid var(--border-hi);
+                 color:var(--text-hi);font-family:var(--ff-mono);font-size:11px;padding:0 10px;
+                 outline:none;margin-bottom:10px;box-sizing:border-box;"
+          value="${getStoredApiKey()}">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button id="api-key-save" style="flex:1;height:32px;background:rgba(56,189,248,.12);border:1px solid var(--ai);
+                  color:var(--ai);font-family:var(--ff-mono);font-size:10px;letter-spacing:.08em;cursor:pointer;">
+            SAVE &amp; CONTINUE
+          </button>
+          ${!required?`<button id="api-key-skip" style="height:32px;padding:0 14px;background:transparent;border:1px solid var(--border-hi);
+                  color:var(--text-dim);font-family:var(--ff-mono);font-size:10px;cursor:pointer;">SKIP</button>`:''}
+          <button id="api-key-cancel" style="height:32px;padding:0 14px;background:transparent;border:1px solid var(--border-hi);
+                  color:var(--text-dim);font-family:var(--ff-mono);font-size:10px;cursor:pointer;">CANCEL</button>
+        </div>
+        <div id="api-key-status" style="font-size:9px;color:var(--text-dim);"></div>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:9px;color:var(--text-dim);cursor:pointer;">
+          <input type="checkbox" id="api-key-show" style="accent-color:var(--ai);cursor:pointer;">
+          Show key
+        </label>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const inp=overlay.querySelector('#api-key-input');
+    const status=overlay.querySelector('#api-key-status');
+    inp.focus();
+
+    overlay.querySelector('#api-key-show').addEventListener('change',function(){
+      inp.type=this.checked?'text':'password';
+    });
+    overlay.querySelector('#api-key-save').addEventListener('click',()=>{
+      const k=inp.value.trim();
+      if(!k){ status.textContent='Please enter a key.'; status.style.color='var(--danger)'; return; }
+      if(!k.startsWith('sk-')){ status.textContent='Key should start with sk-…'; status.style.color='var(--warn)'; }
+      setStoredApiKey(k);
+      document.body.removeChild(overlay);
+      resolve(k);
+    });
+    const skipBtn=overlay.querySelector('#api-key-skip');
+    if(skipBtn) skipBtn.addEventListener('click',()=>{ document.body.removeChild(overlay); resolve(null); });
+    overlay.querySelector('#api-key-cancel').addEventListener('click',()=>{ document.body.removeChild(overlay); resolve(false); });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') overlay.querySelector('#api-key-save').click(); });
+  });
+}
+
+async function fetchAINarrative(a,recs){
+  // Get stored key; if none, prompt the user
+  let key=getStoredApiKey();
+  if(!key){
+    key=await promptForApiKey(false);
+    if(!key) return null; // user cancelled or skipped
+  }
+
+  const prompt=`You are an expert 3D model analyst. A user has loaded an STL file named "${a.fileName}" with these geometry stats:
+- Total triangles: ${a.F.toLocaleString()}
+- Disconnected bodies (CONNECT mode): ${a.connParts}
+- Model dimensions: ${a.size.x} × ${a.size.y} × ${a.size.z} units
+- Aspect ratio: ${a.aspectRatio.toFixed(1)}:1
+- Unique normal directions: ${a.uniqueNormals.toLocaleString()}
+- Mostly flat-faced geometry: ${a.isMostlyFlat}
+- Sharp edges at 15°: ${(a.sharpAt15*100).toFixed(1)}%
+- Sharp edges at 30°: ${(a.sharpAt30*100).toFixed(1)}%
+- Sharp edges at 45°: ${(a.sharpAt45*100).toFixed(1)}%
+- Triangle size variation (CV): ${a.areaCV.toFixed(2)}
+- Recommended segmentation: ${a.suggestedMode==='conn'?'CONNECT mode':'ANGLE mode at '+a.suggestedAngle+'°'}
+- Expected parts after segmentation: ~${a.expectedParts||a.connParts}
+
+Write 2-3 SHORT sentences (max 60 words total) that:
+1. Characterize what type of model this likely is (mechanical part, organic shape, architectural, etc.)
+2. Explain in plain language WHY the recommended approach will work well
+3. Note one practical tip for using the wand tool on this type of geometry
+
+Be direct, technical but friendly. No preamble, no "Based on the analysis". Start immediately with your assessment.`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:200,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    if(resp.status===401){
+      // Key rejected — clear it and tell the user
+      setStoredApiKey('');
+      return '__KEY_INVALID__';
+    }
+    const data=await resp.json();
+    if(data.error){ return null; }
+    const textBlock=data.content?.find(b=>b.type==='text');
+    return textBlock?.text||null;
+  }catch(e){ return null; }
+}
+
+// ── Render the advisor UI ──────────────────────────────
+async function openAIAdvisor(){
+  if(!rawPos){ alert('Load an STL first.'); return; }
+  const modal=document.getElementById('ai-modal');
+  const body=document.getElementById('ai-body');
+  const applyBtn=document.getElementById('ai-apply-all');
+  modal.classList.add('on');
+  applyBtn.style.display='none';
+  body.innerHTML=`<div class="ai-thinking"><span>Analyzing geometry</span><span class="ai-dots"><span>.</span><span>.</span><span>.</span></span></div>`;
+
+  // Run analysis (brief async pause so UI renders)
+  await tick(40);
+  const a=analyzeGeometry();
+  if(!a){ body.innerHTML='<div class="ai-thinking">Error analyzing geometry.</div>'; return; }
+
+  const recs=buildRecommendations(a);
+  let bestRec=recs[0]; // top recommendation for the apply-all button
+
+  // Build metrics grid
+  const metricsHTML=`
+    <div class="ai-metrics">
+      <div class="ai-metric"><div class="ai-metric-label">TRIANGLES</div><div class="ai-metric-val">${a.F.toLocaleString()}</div><div class="ai-metric-sub">raw faces</div></div>
+      <div class="ai-metric"><div class="ai-metric-label">BODIES</div><div class="ai-metric-val">${a.connParts}</div><div class="ai-metric-sub">disconnected</div></div>
+      <div class="ai-metric"><div class="ai-metric-label">DIMENSIONS</div><div class="ai-metric-val">${a.maxDim}</div><div class="ai-metric-sub">max axis (units)</div></div>
+      <div class="ai-metric"><div class="ai-metric-label">SHARP EDGES</div><div class="ai-metric-val">${(a.sharpAt30*100).toFixed(0)}%</div><div class="ai-metric-sub">at 30° threshold</div></div>
+      <div class="ai-metric"><div class="ai-metric-label">NORMALS</div><div class="ai-metric-val">${a.uniqueNormals.toLocaleString()}</div><div class="ai-metric-sub">${a.isMostlyFlat?'flat/prismatic':'curved/organic'}</div></div>
+      <div class="ai-metric"><div class="ai-metric-label">EXPECTED PARTS</div><div class="ai-metric-val">~${a.expectedParts||a.connParts}</div><div class="ai-metric-sub">at ${a.suggestedAngle}°</div></div>
+    </div>`;
+
+  // Build recs HTML
+  const recsHTML=recs.map((r,idx)=>`
+    <div class="ai-rec priority-${r.priority}">
+      <div class="ai-rec-header">
+        <span class="ai-rec-badge">${r.priority==='high'?'● BEST':'○ GOOD'}</span>
+        <span class="ai-rec-title">${r.title}</span>
+      </div>
+      <div class="ai-rec-body">${r.body}</div>
+      <button class="ai-rec-action" data-rec="${idx}">⚡ ${r.action}</button>
+    </div>`).join('');
+
+  // Show metrics + recs immediately, with placeholder for narrative
+  body.innerHTML=metricsHTML+
+    `<div style="font-family:var(--ff-mono);font-size:10px;color:var(--ai);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Recommendations</div>`+
+    recsHTML+
+    `<div class="ai-narrative" id="ai-narrative-block">
+      <div class="ai-narrative-label">◈ AI Analysis</div>
+      <div class="ai-narrative-text ai-thinking"><span>Generating analysis</span><span class="ai-dots"><span>.</span><span>.</span><span>.</span></span></div>
+    </div>`;
+
+  // Wire recommendation action buttons
+  body.querySelectorAll('.ai-rec-action').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=+btn.dataset.rec;
+      recs[idx].fn();
+      closeAIModal();
+      setStatus(`Applied: ${recs[idx].title}`);
+    });
+  });
+
+  // Show apply-all button
+  applyBtn.style.display='';
+  applyBtn.onclick=()=>{ bestRec.fn(); closeAIModal(); setStatus(`Applied: ${bestRec.title}`); };
+
+  // Fetch narrative in background
+  fetchAINarrative(a,recs).then(async text=>{
+    const nb=document.getElementById('ai-narrative-block');
+    if(!nb||!modal.classList.contains('on')) return;
+    const textEl=nb.querySelector('.ai-narrative-text');
+    if(text==='__KEY_INVALID__'){
+      textEl.innerHTML=`<span style="color:var(--danger);">⚠ API key rejected by Anthropic.</span> <button onclick="promptForApiKey(true).then(k=>k&&openAIAdvisor())" style="background:transparent;border:1px solid var(--ai);color:var(--ai);font-family:var(--ff-mono);font-size:10px;padding:2px 8px;cursor:pointer;margin-left:8px;">UPDATE KEY</button>`;
+    } else {
+      textEl.innerHTML=text
+        ? text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+        : `This model has <strong>${a.F.toLocaleString()} triangles</strong> across <strong>${a.connParts} ${a.connParts>1?'disconnected bodies':'connected body'}</strong>. ${a.isMostlyFlat?'The flat-faced geometry suggests a mechanical or CAD part — use the ANGLE mode at low thresholds to split cleanly along edges.':'The curved surface normals suggest an organic or sculpted shape — use moderate angle thresholds and explode view to reach inner areas.'}`;
+    }
+  });
+}
+
+function closeAIModal(){
+  document.getElementById('ai-modal').classList.remove('on');
+}
+
+// Wire AI modal buttons
+document.getElementById('btn-ai').onclick=openAIAdvisor;
+document.getElementById('ai-close').onclick=closeAIModal;
+document.getElementById('ai-close-btn').onclick=closeAIModal;
+document.getElementById('ai-modal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('ai-modal')) closeAIModal();
+});
+
+// Enable AI button when model is loaded — hook into refreshUI
+const _origRefreshUI=refreshUI;
+// (we'll just add the enable inside the existing refreshUI)
+
+// ══════════════════════════════════════════════
+// TRANSFORM GIZMO (X/Y/Z axis handles)
+// ══════════════════════════════════════════════
+const gizmoGroup = new THREE.Group();
+gizmoGroup.renderOrder = 999;
+scene.add(gizmoGroup);
+
+const GIZMO_COLORS = { x:0xff3333, y:0x33ee44, z:0x3399ff };
+const gizmoMats = {
+  x: new THREE.MeshBasicMaterial({color:0xff3333,depthTest:false}),
+  y: new THREE.MeshBasicMaterial({color:0x33ee44,depthTest:false}),
+  z: new THREE.MeshBasicMaterial({color:0x3399ff,depthTest:false})
+};
+const gizmoMatHov = new THREE.MeshBasicMaterial({color:0xffffff,depthTest:false});
+
+function makeArrow(axis){
+  const g=new THREE.Group(); g.userData.axis=axis;
+  const shaftGeo=new THREE.CylinderGeometry(0.04,0.04,0.8,8);
+  const headGeo=new THREE.ConeGeometry(0.10,0.3,8);
+  const mat=gizmoMats[axis];
+  const shaft=new THREE.Mesh(shaftGeo,mat); shaft.userData.axis=axis;
+  const head=new THREE.Mesh(headGeo,mat); head.userData.axis=axis;
+  shaft.position.y=0.4; head.position.y=0.95;
+  g.add(shaft); g.add(head);
+  if(axis==='x'){ g.rotation.z=-Math.PI/2; }
+  else if(axis==='z'){ g.rotation.x=Math.PI/2; }
+  // y stays upright
+  return g;
+}
+const gizmoArrows={
+  x:makeArrow('x'), y:makeArrow('y'), z:makeArrow('z')
+};
+Object.values(gizmoArrows).forEach(a=>gizmoGroup.add(a));
+gizmoGroup.visible=false;
+
+let gizmoActive=false;
+let gizmoAxis=null;        // 'x'|'y'|'z'
+const gizmoDragPlane=new THREE.Plane();
+const gizmoDragStart=new THREE.Vector3();
+const gizmoMeshStarts=new Map(); // mesh→Vector3 position at drag start
+
+function updateGizmoPosition(){
+  if(!selSet.size||toolMode!=='move'){ gizmoGroup.visible=false; return; }
+  // Position at centroid of selected meshes in world space
+  const center=new THREE.Vector3();
+  selSet.forEach(m=>{
+    if(!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
+    const c=m.geometry.boundingSphere.center.clone().applyMatrix4(m.matrixWorld);
+    center.add(c);
+  });
+  center.divideScalar(selSet.size);
+  gizmoGroup.position.copy(center);
+
+  // Scale gizmo to be a consistent screen size
+  const dist=camera.position.distanceTo(center);
+  const scale=dist*0.12;
+  gizmoGroup.scale.setScalar(scale);
+  gizmoGroup.visible=true;
+}
+
+function hitTestGizmo(e){
+  const r=new THREE.Raycaster();
+  r.setFromCamera(toNDC(e),camera);
+  const allMeshes=[];
+  gizmoGroup.traverse(child=>{ if(child.isMesh) allMeshes.push(child); });
+  const hits=r.intersectObjects(allMeshes);
+  return hits.length ? hits[0].object.userData.axis : null;
+}
+
+function startGizmoDrag(e, axis){
+  gizmoAxis=axis; gizmoActive=true;
+  // Build constraint plane: perpendicular to camera, containing the gizmo center
+  const camDir=new THREE.Vector3(); camera.getWorldDirection(camDir);
+  gizmoDragPlane.setFromNormalAndCoplanarPoint(camDir, gizmoGroup.position);
+  const ray=new THREE.Raycaster();
+  ray.setFromCamera(toNDC(e),camera);
+  ray.ray.intersectPlane(gizmoDragPlane, gizmoDragStart);
+  gizmoMeshStarts.clear();
+  selSet.forEach(m=>gizmoMeshStarts.set(m, m.position.clone()));
+  document.body.classList.add('dragging');
+}
+
+function updateGizmoDrag(e){
+  if(!gizmoActive) return;
+  const ray=new THREE.Raycaster();
+  ray.setFromCamera(toNDC(e),camera);
+  const pt=new THREE.Vector3();
+  if(!ray.ray.intersectPlane(gizmoDragPlane,pt)) return;
+  const rawDelta=pt.clone().sub(gizmoDragStart);
+  // Project delta onto constraint axis
+  const axes={x:new THREE.Vector3(1,0,0),y:new THREE.Vector3(0,1,0),z:new THREE.Vector3(0,0,1)};
+  const axisVec=axes[gizmoAxis];
+  const projected=axisVec.clone().multiplyScalar(rawDelta.dot(axisVec));
+  gizmoMeshStarts.forEach((startPos,m)=>{
+    m.position.copy(startPos).add(projected);
+  });
+  updateGizmoPosition();
+  // Update coord display
+  const avg=new THREE.Vector3();
+  selSet.forEach(m=>avg.add(m.position)); avg.divideScalar(selSet.size);
+  document.getElementById('mv-x').textContent=avg.x.toFixed(2);
+  document.getElementById('mv-y').textContent=avg.y.toFixed(2);
+  document.getElementById('mv-z').textContent=avg.z.toFixed(2);
+}
+
+function endGizmoDrag(){
+  if(!gizmoActive) return;
+  gizmoActive=false;
+  document.body.classList.remove('dragging');
+  // Auto-bake the move into geometry
+  autoBakeParts([...selSet]);
+  const avg=new THREE.Vector3();
+  selSet.forEach(m=>avg.add(m.position)); avg.divideScalar(Math.max(1,selSet.size));
+  setStatus(`Moved ${selSet.size} part${selSet.size!==1?'s':''} along ${gizmoAxis?.toUpperCase()||''} — baked.`);
+  gizmoAxis=null;
+}
+
+// ══════════════════════════════════════════════
+// AUTO-BAKE: write mesh.position offset into geometry
+// ══════════════════════════════════════════════
+function autoBakeParts(targetMeshes){
+  targetMeshes.forEach(m=>{
+    const dx=m.position.x, dy=m.position.y, dz=m.position.z;
+    if(Math.abs(dx)<1e-9&&Math.abs(dy)<1e-9&&Math.abs(dz)<1e-9) return;
+    const pa=m.geometry.attributes.position;
+    for(let i=0;i<pa.count;i++) pa.setXYZ(i,pa.getX(i)+dx,pa.getY(i)+dy,pa.getZ(i)+dz);
+    pa.needsUpdate=true;
+    m.geometry.computeBoundingSphere();
+    faceAdjCache.delete(m); faceNormCache.delete(m);
+    m.position.set(0,0,0);
+    partMoveOrigins.set(m,new THREE.Vector3(0,0,0));
+  });
+  syncRawFromMeshes();
+  computeExplodeOffsets(); applyExplode(explodeAmount);
+}
+
+// ══════════════════════════════════════════════
+// VIEW CUBE
+// ══════════════════════════════════════════════
+const vcCanvas=document.getElementById('viewcube');
+const vcRenderer=new THREE.WebGLRenderer({canvas:vcCanvas,antialias:true,alpha:true});
+vcRenderer.setPixelRatio(Math.min(devicePixelRatio,2));
+vcRenderer.setSize(90,90);
+vcRenderer.setClearColor(0x000000,0);
+
+const vcScene=new THREE.Scene();
+const vcCamera=new THREE.PerspectiveCamera(40,1,0.1,100);
+vcCamera.position.set(2.5,2,2.5);
+vcCamera.lookAt(0,0,0);
+vcScene.add(new THREE.AmbientLight(0xffffff,0.6));
+const vcLight=new THREE.DirectionalLight(0xffffff,0.8);
+vcLight.position.set(3,5,3);
+vcScene.add(vcLight);
+
+// Build the cube with 6 coloured faces
+const vcFaceColors=[0x3a5080,0x2a3a60,0x404060,0x303050,0x354070,0x253050];
+const vcFaceGeo=new THREE.BoxGeometry(1.6,1.6,1.6);
+const vcFaceMats=vcFaceColors.map(c=>new THREE.MeshPhongMaterial({color:c,transparent:true,opacity:0.92}));
+const vcCube=new THREE.Mesh(vcFaceGeo,vcFaceMats);
+vcScene.add(vcCube);
+
+// Wireframe overlay
+const vcWire=new THREE.LineSegments(new THREE.EdgesGeometry(vcFaceGeo),new THREE.LineBasicMaterial({color:0x6688cc,transparent:true,opacity:0.7}));
+vcScene.add(vcWire);
+
+// Face labels using canvas textures
+const vcLabelData=[
+  {text:'FRONT', dir:new THREE.Vector3(0,0,1)},
+  {text:'BACK',  dir:new THREE.Vector3(0,0,-1)},
+  {text:'RIGHT', dir:new THREE.Vector3(1,0,0)},
+  {text:'LEFT',  dir:new THREE.Vector3(-1,0,0)},
+  {text:'TOP',   dir:new THREE.Vector3(0,1,0)},
+  {text:'BTM',   dir:new THREE.Vector3(0,-1,0)},
+];
+vcLabelData.forEach(({text,dir})=>{
+  const tc=document.createElement('canvas'); tc.width=64; tc.height=64;
+  const ctx=tc.getContext('2d');
+  ctx.fillStyle='rgba(0,0,0,0)'; ctx.fillRect(0,0,64,64);
+  ctx.fillStyle='#c8d8ff'; ctx.font='bold 14px monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(text,32,32);
+  const tex=new THREE.CanvasTexture(tc);
+  const plane=new THREE.Mesh(
+    new THREE.PlaneGeometry(1.4,1.4),
+    new THREE.MeshBasicMaterial({map:tex,transparent:true,depthTest:false})
+  );
+  plane.position.copy(dir.clone().multiplyScalar(0.81));
+  plane.lookAt(dir.clone().multiplyScalar(10));
+  vcScene.add(plane);
+});
+
+// Sync view cube rotation to main camera
+function updateViewCube(){
+  const spherical=new THREE.Spherical().setFromVector3(
+    camera.position.clone().sub(new THREE.Vector3(panX,panY,0))
+  );
+  vcCamera.position.setFromSpherical(new THREE.Spherical(4,spherical.phi,spherical.theta));
+  vcCamera.lookAt(0,0,0);
+}
+
+// Snap to standard views
+const vcViews={
+  front:  {theta:0,   phi:Math.PI/2},
+  back:   {theta:Math.PI, phi:Math.PI/2},
+  left:   {theta:-Math.PI/2, phi:Math.PI/2},
+  right:  {theta:Math.PI/2,  phi:Math.PI/2},
+  top:    {theta:0,   phi:0.01},
+  bottom: {theta:0,   phi:Math.PI-0.01}
+};
+
+function snapToView(name){
+  const v=vcViews[name];
+  if(!v) return;
+  // Animate camera to new angle
+  const startTheta=theta, startPhi=phi;
+  const endTheta=v.theta, endPhi=v.phi;
+  let t=0;
+  function anim(){
+    t+=0.08; if(t>1) t=1;
+    const ease=1-Math.pow(1-t,3);
+    theta=startTheta+(endTheta-startTheta)*ease;
+    phi=startPhi+(endPhi-startPhi)*ease;
+    camUpdate();
+    if(t<1) requestAnimationFrame(anim);
+  }
+  anim();
+}
+
+// Click view cube canvas — hit test faces
+vcCanvas.addEventListener('click',e=>{
+  const r=vcCanvas.getBoundingClientRect();
+  const x=((e.clientX-r.left)/90)*2-1;
+  const y=-((e.clientY-r.top)/90)*2+1;
+  const vcRay=new THREE.Raycaster();
+  vcRay.setFromCamera({x,y},vcCamera);
+  const hits=vcRay.intersectObject(vcCube);
+  if(!hits.length) return;
+  // Determine which face was hit from normal
+  const n=hits[0].face.normal.clone().applyQuaternion(vcCube.quaternion);
+  const ax=Math.abs(n.x),ay=Math.abs(n.y),az=Math.abs(n.z);
+  if(ay>ax&&ay>az) snapToView(n.y>0?'top':'bottom');
+  else if(ax>az)   snapToView(n.x>0?'right':'left');
+  else             snapToView(n.z>0?'front':'back');
+});
+
+// Programmatic view buttons
+document.querySelectorAll('.vc-btn').forEach(btn=>{
+  btn.addEventListener('click',e=>{ e.stopPropagation(); snapToView(btn.dataset.view); });
+});
+
+// Show/hide view cube
+function setViewCubeVisible(v){ document.getElementById('viewcube-wrap').classList.toggle('on',v); }
+setViewCubeVisible(true);
+
+// ══════════════════════════════════════════════
+// ORBIT PRESETS
+// ══════════════════════════════════════════════
+let orbitPreset='default'; // current preset name
+let invertZoom=false;
+
+// Preset definitions: describes which mouse button / modifier does what
+const ORBIT_PRESETS={
+  default:  {name:'DEFAULT',  orbit:{btn:0,mod:null},      pan:{btn:2,mod:null},        zoom:'scroll', zoomAlt:null, hint:'LMB drag = orbit · RMB drag = pan · Scroll = zoom'},
+  fusion360:{name:'FUSION 360', orbit:{btn:1,mod:'shift'},  pan:{btn:1,mod:null},        zoom:'scroll', zoomAlt:null, hint:'Shift+MMB drag = orbit · MMB drag = pan · Scroll = zoom'},
+  tinkercad:{name:'TINKERCAD',orbit:{btn:2,mod:null},      pan:{btn:1,mod:null},        zoom:'scroll', zoomAlt:null, hint:'RMB drag = orbit · MMB drag = pan · Scroll = zoom'},
+  freecad:  {name:'FREECAD',  orbit:{btn:1,mod:null},      pan:{btn:1,mod:'shift'},      zoom:'scroll', zoomAlt:null, hint:'MMB drag = orbit · Shift+MMB drag = pan · Scroll = zoom'},
+  blender:  {name:'BLENDER',  orbit:{btn:1,mod:null},      pan:{btn:1,mod:'shift'},      zoom:'scroll', zoomAlt:null, hint:'MMB drag = orbit · Shift+MMB drag = pan · Scroll = zoom'},
+  maya:     {name:'MAYA',     orbit:{btn:0,mod:'alt'},     pan:{btn:1,mod:'alt'},        zoom:'scroll', zoomAlt:{btn:2,mod:'alt'}, hint:'Alt+LMB = orbit · Alt+MMB = pan · Alt+RMB = zoom · Scroll = zoom'},
+};
+
+let altKeyDown=false;
+window.addEventListener('keydown',e=>{ if(e.key==='Alt') altKeyDown=true; });
+window.addEventListener('keyup',  e=>{ if(e.key==='Alt') altKeyDown=false; });
+
+function matchesPresetAction(e, action, preset){
+  const p=ORBIT_PRESETS[preset||orbitPreset];
+  const def=p[action];
+  if(!def) return false;
+  const btnMatch = e.button===def.btn;
+  const modMatch = def.mod===null ||
+    (def.mod==='shift'&&e.shiftKey) ||
+    (def.mod==='alt'&&altKeyDown) ||
+    (def.mod==='ctrl'&&(e.ctrlKey||e.metaKey));
+  const noExtraMod = def.mod===null ? (!e.shiftKey&&!altKeyDown) : true;
+  return btnMatch && modMatch;
+}
+
+function applyOrbitPreset(preset, btn){
+  orbitPreset=preset;
+  document.querySelectorAll('.preset-card').forEach(c=>c.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const p=ORBIT_PRESETS[preset];
+  document.getElementById('preset-hint').textContent=p.hint;
+}
+// Init hint
+applyOrbitPreset('default', document.querySelector('[data-preset="default"]'));
+
+// ── Override mouse handlers to use preset ───────────────────
+// Replace the hardcoded btn=0/btn=2 orbit/pan logic
+// We do this by re-evaluating which action to perform in the mousemove handler
+// (The existing code uses mBtn; we patch the interpret step)
+function getOrbitAction(e){
+  if(matchesPresetAction(e,'orbit')) return 'orbit';
+  if(matchesPresetAction(e,'pan'))   return 'pan';
+  if(ORBIT_PRESETS[orbitPreset].zoomAlt && matchesPresetAction(e,'zoomAlt')) return 'zoom';
+  return null;
+}
+
+// Store the original mousemove so we can reference mBtn + orbitPreset
+// We patch by re-checking mBtn against preset on each move
+// The actual patch is in the mousemove handler — we need to edit its orbit/pan block
+// This is done via a flag set on mousedown
+let _moveAction=null; // 'orbit'|'pan'|'zoom'|null
+
+// Patch mousedown to record the action type based on preset
+canvas.addEventListener('mousedown',e=>{
+  if(toolMode==='orbit'||toolMode==='wand'){
+    _moveAction=getOrbitAction(e)||null;
+  } else {
+    _moveAction=null;
+  }
+},true); // capture phase — fires BEFORE the main handler sets mDown
+
+// ══════════════════════════════════════════════
+// VIEW CUBE MOUSE DRAG (orbit main camera)
+// ══════════════════════════════════════════════
+let vcDragging=false;
+let vcDragLast={x:0,y:0};
+
+vcCanvas.addEventListener('mousedown',e=>{
+  vcDragging=true;
+  vcDragLast={x:e.clientX, y:e.clientY};
+  e.preventDefault();
+  e.stopPropagation();
+});
+document.addEventListener('mousemove',e=>{
+  if(!vcDragging) return;
+  const dx=e.clientX-vcDragLast.x;
+  const dy=e.clientY-vcDragLast.y;
+  theta-=dx*0.012;
+  phi=Math.max(0.04,Math.min(Math.PI-0.04,phi+dy*0.012));
+  camUpdate();
+  vcDragLast={x:e.clientX,y:e.clientY};
+});
+document.addEventListener('mouseup',()=>{ vcDragging=false; });
+
+// ══════════════════════════════════════════════
+// SETTINGS WIRING
+// ══════════════════════════════════════════════
+document.getElementById('btn-settings').onclick=()=>document.getElementById('settings-modal').classList.add('on');
+document.getElementById('settings-close').onclick=()=>document.getElementById('settings-modal').classList.remove('on');
+document.getElementById('settings-close-btn').onclick=()=>document.getElementById('settings-modal').classList.remove('on');
+document.getElementById('settings-modal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('settings-modal')) document.getElementById('settings-modal').classList.remove('on');
+});
+
+// ══════════════════════════════════════════════
+// DRAGGABLE / COLLAPSIBLE LEFT PANEL SECTIONS
+// ══════════════════════════════════════════════
+(function initPanelSections(){
+  const panel=document.getElementById('lpanel');
+  let locked=false;
+
+  // Lock/unlock toggle
+  document.getElementById('btn-lp-lock').addEventListener('click',()=>{
+    locked=!locked;
+    panel.classList.toggle('layout-locked',locked);
+    document.getElementById('lp-lock-label').textContent=locked
+      ? 'LAYOUT LOCKED — drag disabled'
+      : 'LAYOUT UNLOCKED — drag sections to reorder';
+    document.getElementById('lock-icon-open').style.display  = locked?'none':'';
+    document.getElementById('lock-icon-closed').style.display= locked?'':'none';
+    document.getElementById('btn-lp-lock').childNodes[
+      document.getElementById('btn-lp-lock').childNodes.length-1
+    ].textContent = locked ? ' UNLOCK LAYOUT' : ' LOCK LAYOUT';
+    // Enable/disable draggable on all sections
+    panel.querySelectorAll('.lp-section').forEach(s=>{
+      s.setAttribute('draggable', locked?'false':'true');
+    });
+  });
+
+  const sections=[...panel.querySelectorAll('.lp-section')];
+
+  sections.forEach(sec=>{
+    // Find the existing lp-title (first child that has class lp-title or similar)
+    const existingTitle=sec.querySelector('.lp-title,.lp-title.wand-title,.lp-title.explode-title,.lp-title.orient-title,.lp-title.export-title,.lp-title.move-title');
+
+    // Wrap content: create header + body
+    const header=document.createElement('div');
+    header.className='lp-section-header';
+
+    const dragHandle=document.createElement('span');
+    dragHandle.className='lp-drag-handle';
+    dragHandle.textContent='⠿';
+    dragHandle.title='Drag to reorder';
+    dragHandle.setAttribute('draggable','false'); // handle-only drag
+
+    const collapseBtn=document.createElement('button');
+    collapseBtn.className='lp-collapse-btn';
+    collapseBtn.textContent='▾';
+    collapseBtn.title='Collapse/expand';
+
+    const body=document.createElement('div');
+    body.className='lp-section-body';
+
+    // Move all existing children into body
+    while(sec.firstChild) body.appendChild(sec.firstChild);
+
+    // If we found the title, move it back to the header
+    if(existingTitle){
+      header.appendChild(dragHandle);
+      header.appendChild(existingTitle);
+      header.appendChild(collapseBtn);
+    } else {
+      header.appendChild(dragHandle);
+      header.appendChild(collapseBtn);
+    }
+
+    sec.appendChild(header);
+    sec.appendChild(body);
+
+    // Collapse toggle
+    header.addEventListener('click',e=>{
+      if(e.target===dragHandle||e.target.closest('.lp-drag-handle')) return;
+      sec.classList.toggle('collapsed-sec');
+    });
+
+    // Drag-to-reorder
+    sec.setAttribute('draggable','true');
+    sec.addEventListener('dragstart',e=>{
+      if(locked){ e.preventDefault(); return; }
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain','');
+      setTimeout(()=>sec.classList.add('being-dragged'),0);
+      panel._dragSec=sec;
+    });
+    sec.addEventListener('dragend',()=>{
+      sec.classList.remove('being-dragged');
+      panel.querySelectorAll('.lp-section').forEach(s=>s.classList.remove('dragging-over'));
+      panel._dragSec=null;
+    });
+    sec.addEventListener('dragover',e=>{
+      if(locked) return;
+      e.preventDefault();
+      if(panel._dragSec&&panel._dragSec!==sec){
+        sec.classList.add('dragging-over');
+      }
+    });
+    sec.addEventListener('dragleave',()=>sec.classList.remove('dragging-over'));
+    sec.addEventListener('drop',e=>{
+      if(locked) return;
+      e.preventDefault();
+      sec.classList.remove('dragging-over');
+      const src=panel._dragSec;
+      if(src&&src!==sec){
+        const rect=sec.getBoundingClientRect();
+        const mid=rect.top+rect.height/2;
+        if(e.clientY<mid) panel.insertBefore(src,sec);
+        else if(sec.nextSibling) panel.insertBefore(src,sec.nextSibling);
+        else panel.appendChild(src);
+      }
+    });
+  });
+})();
+
+// ══════════════════════════════════════════════
+// TRIANGLE COLOR PICKER
+// ══════════════════════════════════════════════
+// Map: mesh → { faces: Set<number>, color: string }[]  — groups of colored faces
+const triColorGroups=new Map(); // mesh → array of {faces:Set, color:string, overlay:THREE.Mesh}
+
+function applyTriColor(){
+  if(!faceSelections.size){ setStatus('No triangles selected.'); return; }
+  const color=document.getElementById('tri-color-pick').value;
+  const hexNum=parseInt(color.replace('#',''),16);
+
+  faceSelections.forEach((selFaces,mesh)=>{
+    if(!selFaces.size) return;
+
+    // Build overlay geometry for this color group
+    const pos=mesh.geometry.attributes.position.array;
+    const out=new Float32Array(selFaces.size*9);
+    let i=0;
+    for(const f of selFaces){
+      const b=f*9;
+      for(let v=0;v<9;v++) out[i++]=pos[b+v];
+    }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(out,3));
+    const mat=new THREE.MeshBasicMaterial({
+      color:hexNum,side:THREE.DoubleSide,
+      polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,
+      transparent:true,opacity:0.92
+    });
+    const ov=new THREE.Mesh(geo,mat);
+    ov.position.copy(mesh.position);
+    ov.rotation.copy(mesh.rotation);
+    ov.userData.isColorOverlay=true;
+    group.add(ov);
+
+    // Store it
+    if(!triColorGroups.has(mesh)) triColorGroups.set(mesh,[]);
+    triColorGroups.get(mesh).push({faces:new Set(selFaces),color,overlay:ov});
+  });
+
+  // Clear selection after applying color
+  clearFaceSel();
+  setStatus(`Applied color ${color} to triangles.`);
+  refreshUI();
+}
+
+// Wire color picker UI
+document.getElementById('tri-color-pick').addEventListener('input',function(){
+  // Deselect all preset swatches
+  document.querySelectorAll('.tri-cp').forEach(b=>b.classList.remove('active'));
+});
+document.querySelectorAll('.tri-cp').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.getElementById('tri-color-pick').value=btn.dataset.c;
+    document.querySelectorAll('.tri-cp').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+document.getElementById('btn-apply-tri-color').addEventListener('click',applyTriColor);
+
+// Enable apply button when face selections exist — patch into refreshUI
+const _prevRefreshUI=refreshUI;
+// (just ensure button state is kept in sync)
+
+// ══════════════════════════════════════════════
+// DRAGGABLE HUD WIDGETS
+// ══════════════════════════════════════════════
+(function initHudWidgets(){
+  // Show hints by default
+  document.getElementById('hints').classList.add('on');
+
+  // Widgets to make draggable: hints, explode-badge, orient-badge
+  ['hints','explode-badge','orient-badge'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    let dragging=false, ox=0, oy=0;
+
+    // Find (or create) the drag handle for this widget
+    const handle=el.querySelector('.hud-drag-handle');
+    if(!handle) return;
+
+    function startDrag(e){
+      // Only start on the handle itself
+      if(!e.target.closest('.hud-drag-handle')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragging=true;
+
+      // Resolve current absolute pixel position (undoes any transform)
+      const vp=document.getElementById('viewport');
+      const vpR=vp.getBoundingClientRect();
+      const elR=el.getBoundingClientRect();
+
+      // Remove transform-based centering and switch to explicit left/top
+      el.style.transform='none';
+      el.style.left=(elR.left-vpR.left)+'px';
+      el.style.top =(elR.top -vpR.top )+'px';
+      el.style.bottom='auto';
+      el.style.right='auto';
+
+      ox=e.clientX-elR.left;
+      oy=e.clientY-elR.top;
+      el.style.zIndex=20;
+    }
+
+    function onMove(e){
+      if(!dragging) return;
+      const vpR=document.getElementById('viewport').getBoundingClientRect();
+      let nx=e.clientX-vpR.left-ox;
+      let ny=e.clientY-vpR.top -oy;
+      // Clamp inside viewport
+      nx=Math.max(0,Math.min(vpR.width -el.offsetWidth,  nx));
+      ny=Math.max(0,Math.min(vpR.height-el.offsetHeight, ny));
+      el.style.left=nx+'px';
+      el.style.top =ny+'px';
+    }
+
+    function endDrag(){
+      if(dragging){ dragging=false; el.style.zIndex=''; }
+    }
+
+    handle.addEventListener('mousedown',startDrag);
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',endDrag);
+
+    // Touch support
+    handle.addEventListener('touchstart',e=>{
+      const t=e.touches[0];
+      startDrag({target:e.target,preventDefault:()=>e.preventDefault(),
+                 stopPropagation:()=>e.stopPropagation(),clientX:t.clientX,clientY:t.clientY});
+    },{passive:false});
+    document.addEventListener('touchmove',e=>{
+      if(dragging){ onMove(e.touches[0]); e.preventDefault(); }
+    },{passive:false});
+    document.addEventListener('touchend',endDrag);
+  });
+})();
+
+// ══════════════════════════════════════════════
+// RENDER LOOP
+// ══════════════════════════════════════════════
+(function loop(){
+  requestAnimationFrame(loop);
+  renderer.render(scene,camera);
+  updateViewCube();
+  vcRenderer.render(vcScene,vcCamera);
+  if(toolMode==='move') updateGizmoPosition();
+})();
+</script>
+</body>
+</html>

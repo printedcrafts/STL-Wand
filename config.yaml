@@ -1,0 +1,9 @@
+# GitHub Pages configuration
+title: STL Wand Editor
+description: Browser-based 3D STL file editor — segment, select, delete, reorient, and export STL parts
+theme: null
+
+# Prevent Jekyll from processing the single-file app
+# (not strictly needed for a plain HTML file, but good practice)
+include:
+  - index.html
