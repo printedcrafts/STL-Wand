@@ -1965,10 +1965,11 @@ function commitFaceSelectionAsGroup(mesh){
   return g;
 }
 
-function deleteGroup(mesh, groupId){
-  if(g.overlay){ if(g.overlay.parent) g.overlay.parent.remove(g.overlay); g.overlay.geometry.dispose(); g.overlay=null; }
+function rebuildGroupOverlay(mesh, g){
+  if(g.overlay && g.overlay.parent){ g.overlay.parent.remove(g.overlay); g.overlay.geometry.dispose(); g.overlay=null; }
   if(!scene_group_ref) return;
   const pos = mesh.geometry.attributes.position.array;
+  if(!pos || g.faces.size === 0) return;
   const out = new Float32Array(g.faces.size * 9);
   let i=0;
   for(const f of g.faces){ const b=f*9; for(let v=0;v<9;v++) out[i++]=pos[b+v]; }
@@ -2721,6 +2722,8 @@ async function loadSTL(file){
   const ld=document.getElementById('loading');
   function msg(t,s=''){document.getElementById('ld-msg').textContent=t;document.getElementById('ld-sub').textContent=s;}
   ld.classList.add('on');await tick();
+
+  try {
   if(group)scene.remove(group);
   group=null;meshes=[];selSet.clear();hiddenSet.clear();hovMesh=null;undoStk=[];rawPos=null;rawNrm=null;
   explodeAmount=0;explodeOffsets=[];orientAngles={x:0,y:0,z:0};orientBaked=false;moveOffset.set(0,0,0);
@@ -2747,15 +2750,27 @@ async function loadSTL(file){
 
   await buildMeshes(msg,true);
 
-  document.getElementById('dropzone').style.display='none';
-  document.getElementById('rpanel').classList.add('on');
-  document.getElementById('lpanel').classList.remove('collapsed');
-  document.getElementById('btn-panel').classList.add('active');
-  resize(); // ensure canvas is correctly sized when the model first renders
-  setStatus(`${file.name}  ·  ${meshes.length} part${meshes.length>1?'s':''}  ·  ${F.toLocaleString()} tri`);
-  updateWarn();
-  ld.classList.remove('on');
-  refreshUI();
+    document.getElementById('dropzone').style.display='none';
+    document.getElementById('rpanel').classList.add('on');
+    document.getElementById('lpanel').classList.remove('collapsed');
+    document.getElementById('btn-panel').classList.add('active');
+    resize();
+    setStatus(`${file.name}  ·  ${meshes.length} part${meshes.length>1?'s':''}  ·  ${F.toLocaleString()} tri`);
+    updateWarn();
+    ld.classList.remove('on');
+    refreshUI();
+
+  } catch(err) {
+    // Always clear the loading screen — never leave it stuck
+    ld.classList.remove('on');
+    console.error('STL load error:', err);
+    alert(`Error loading "${file.name}":\n\n${err.message||err}\n\nCheck the browser console (F12) for details.`);
+    // Reset state so the dropzone shows again
+    if(group){ scene.remove(group); group=null; }
+    meshes=[]; rawPos=null; rawNrm=null;
+    document.getElementById('dropzone').style.display='';
+    document.getElementById('rpanel').classList.remove('on');
+  }
 }
 
 async function buildMeshes(msg,fitCam){
