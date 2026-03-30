@@ -1946,7 +1946,6 @@ const overlayMeshes  = new Map();
 // A "group" is a named, persistent set of 5+ triangles on a single mesh.
 const triGroups = new Map();
 let _groupCounter = 0;
-let scene_group_ref = null; // reference to the current Three.js group for adding overlays
 
 function getGroupsForMesh(mesh){ return triGroups.get(mesh)||[]; }
 
@@ -1958,7 +1957,7 @@ function commitFaceSelectionAsGroup(mesh){
   const g = { id, name, faces: new Set(sel), collapsed: false };
   if(!triGroups.has(mesh)) triGroups.set(mesh, []);
   triGroups.get(mesh).push(g);
-  // Build overlay immediately (scene_group_ref must be set)
+  // Build overlay immediately (group must be set)
   rebuildGroupOverlay(mesh, g);
   // Clear the temporary face selection
   faceSelections.delete(mesh);
@@ -1968,7 +1967,7 @@ function commitFaceSelectionAsGroup(mesh){
 
 function rebuildGroupOverlay(mesh, g){
   if(g.overlay && g.overlay.parent){ g.overlay.parent.remove(g.overlay); g.overlay.geometry.dispose(); g.overlay=null; }
-  if(!scene_group_ref) return;
+  if(!group) return;
   const pos = mesh.geometry.attributes.position.array;
   if(!pos || g.faces.size === 0) return;
   const out = new Float32Array(g.faces.size * 9);
@@ -1989,7 +1988,7 @@ function rebuildGroupOverlay(mesh, g){
   ov.userData.isGroupOverlay = true;
   ov.visible = !g.collapsed;
   g.overlay = ov;
-  scene_group_ref.add(ov);
+  group.add(ov);
 }
 
 function deleteGroup(mesh, groupId){
@@ -2722,35 +2721,43 @@ function applyExplode(t){
 async function loadSTL(file){
   const ld=document.getElementById('loading');
   function msg(t,s=''){document.getElementById('ld-msg').textContent=t;document.getElementById('ld-sub').textContent=s;}
-  ld.classList.add('on');await tick();
+  ld.classList.add('on');
+  await tick();
 
   try {
-  if(group)scene.remove(group);
-  group=null;meshes=[];selSet.clear();hiddenSet.clear();hovMesh=null;undoStk=[];rawPos=null;rawNrm=null;
-  explodeAmount=0;explodeOffsets=[];orientAngles={x:0,y:0,z:0};orientBaked=false;moveOffset.set(0,0,0);
-  listSort='index';
-  document.getElementById('rp-sort').value='index';
-  wandTolerance=0;
-  document.getElementById('sl-wand-tol').value=0;
-  document.getElementById('lbl-wand-tol').textContent='0%';
-  document.getElementById('wand-preview-fill').style.width='0%';
-  document.getElementById('wand-tol-badge').classList.remove('on');
-  document.getElementById('btn-undo').disabled=true;
-  document.getElementById('btn-showall').disabled=true;
-  loadedFileName=file.name.replace(/\.stl$/i,'').replace(/[^a-zA-Z0-9_\-]/g,'_')||'model';
-  document.getElementById('export-prefix').value=loadedFileName;
+    // ── Reset all state ──────────────────────────────────────────
+    if(group){ scene.remove(group); group=null; }
+    meshes=[];selSet.clear();hiddenSet.clear();hovMesh=null;undoStk=[];
+    rawPos=null;rawNrm=null;
+    explodeAmount=0;explodeOffsets=[];
+    orientAngles={x:0,y:0,z:0};orientBaked=false;
+    moveOffset.set(0,0,0);
+    listSort='index';
+    document.getElementById('rp-sort').value='index';
+    wandTolerance=0;
+    document.getElementById('sl-wand-tol').value=0;
+    document.getElementById('lbl-wand-tol').textContent='0%';
+    document.getElementById('wand-preview-fill').style.width='0%';
+    document.getElementById('wand-tol-badge').classList.remove('on');
+    document.getElementById('btn-undo').disabled=true;
+    document.getElementById('btn-showall').disabled=true;
+    loadedFileName=file.name.replace(/\.stl$/i,'').replace(/[^a-zA-Z0-9_\-]/g,'_')||'model';
+    document.getElementById('export-prefix').value=loadedFileName;
 
-  msg('READING FILE…');await tick();
-  const buf=await file.arrayBuffer();
-  msg('PARSING GEOMETRY…');await tick();
-  let p;try{p=parseSTL(buf);}catch(e){alert('Parse error: '+e.message);ld.classList.remove('on');return;}
-  rawPos=p.pos;rawNrm=p.nrm;
-  const F=rawPos.length/9;
-  document.getElementById('sv-tri').textContent=F.toLocaleString();
-  if(!F){alert('No triangles found.');ld.classList.remove('on');return;}
+    // ── Read & parse ─────────────────────────────────────────────
+    msg('READING FILE…'); await tick();
+    const buf = await file.arrayBuffer();
+    msg('PARSING GEOMETRY…'); await tick();
+    const p = parseSTL(buf);
+    rawPos=p.pos; rawNrm=p.nrm;
+    const F = rawPos.length/9;
+    document.getElementById('sv-tri').textContent=F.toLocaleString();
+    if(!F) throw new Error('No triangles found in this file.');
 
-  await buildMeshes(msg,true);
+    // ── Build scene ──────────────────────────────────────────────
+    await buildMeshes(msg, true);
 
+    // ── Show model UI ────────────────────────────────────────────
     document.getElementById('dropzone').style.display='none';
     document.getElementById('rpanel').classList.add('on');
     document.getElementById('lpanel').classList.remove('collapsed');
@@ -2758,19 +2765,21 @@ async function loadSTL(file){
     resize();
     setStatus(`${file.name}  ·  ${meshes.length} part${meshes.length>1?'s':''}  ·  ${F.toLocaleString()} tri`);
     updateWarn();
-    ld.classList.remove('on');
     refreshUI();
 
   } catch(err) {
-    // Always clear the loading screen — never leave it stuck
-    ld.classList.remove('on');
     console.error('STL load error:', err);
-    alert(`Error loading "${file.name}":\n\n${err.message||err}\n\nCheck the browser console (F12) for details.`);
-    // Reset state so the dropzone shows again
+    alert(`Error loading "${file.name}":\n${err.message||err}`);
+    // Reset to empty state so dropzone shows again
     if(group){ scene.remove(group); group=null; }
     meshes=[]; rawPos=null; rawNrm=null;
     document.getElementById('dropzone').style.display='';
     document.getElementById('rpanel').classList.remove('on');
+    document.getElementById('lpanel').classList.add('collapsed');
+
+  } finally {
+    // ALWAYS dismiss loading overlay — no matter what happened above
+    ld.classList.remove('on');
   }
 }
 
@@ -2803,8 +2812,7 @@ async function buildMeshes(msg,fitCam){
 
   if(group) scene.remove(group);
   group=ng; meshes=built; selSet.clear(); hiddenSet.clear(); hovMesh=null;
-  scene_group_ref = group; // keep group overlay reference in sync
-  clearFaceSel();
+    clearFaceSel();
   scene.add(group);
 
   // Record each mesh's initial position as its move origin
@@ -3225,8 +3233,7 @@ document.getElementById('rp-group-btn').addEventListener('click',()=>{
     if(sel.size>=5){ commitFaceSelectionAsGroup(mesh); count++; }
   }
   if(count>0){
-    scene_group_ref=group; // ensure ref is current
-    setStatus(`Created ${count} triangle group${count!==1?'s':''}.`);
+        setStatus(`Created ${count} triangle group${count!==1?'s':''}.`);
   }
   refreshUI();
 });
