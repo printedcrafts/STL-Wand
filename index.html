@@ -37,18 +37,82 @@
   --bg:#07070f;--panel:#0d0d1a;
   --border:#1c1c34;--border-hi:#2c2c52;
   --accent:#4af8ff;--accent-glow:rgba(74,248,255,.12);
-  --sel:#ff6600;--hov:#00ffc8;--danger:#ff3355;--warn:#ffcc00;
-  --export:#a78bfa;--export-glow:rgba(167,139,250,.12);
-  --explode:#34d399;--explode-glow:rgba(52,211,153,.10);
-  --orient:#f472b6;--orient-glow:rgba(244,114,182,.10);
+  --sel:#ff6600;--hov:#00ffc8;--danger:#ff3355;--warn:#cc8800;
+  --export:#7c3aed;--export-glow:rgba(124,58,237,.12);
+  --explode:#059669;--explode-glow:rgba(5,150,105,.10);
+  --orient:#db2777;--orient-glow:rgba(219,39,119,.10);
   --ax-x:#ff6b6b;--ax-y:#69ff8a;--ax-z:#6ab0ff;
-  --wand:#c084fc;--wand-glow:rgba(192,132,252,.12);
-  --move:#fb923c;--move-glow:rgba(251,146,60,.12);
-  --ai:#38bdf8;--ai-glow:rgba(56,189,248,.12);--ai-dark:#0c1a24;
+  --wand:#9333ea;--wand-glow:rgba(147,51,234,.12);
+  --move:#ea580c;--move-glow:rgba(234,88,12,.12);
+  --ai:#0284c7;--ai-glow:rgba(2,132,199,.12);--ai-dark:#0c1a24;
   --text:#b8c0dc;--text-dim:#7880a8;--text-hi:#e8eeff;--text-label:#9aa0c0;
   --ff-ui:'DM Sans',sans-serif;--ff-mono:'JetBrains Mono',monospace;
   --lpw:258px;
 }
+
+/* ── LIGHT THEME ─────────────────────────────────────────────────── */
+[data-theme="light"]{
+  --bg:#EDF2F4;--panel:#ffffff;
+  --border:#d0d5e8;--border-hi:#a8b0cc;
+  --accent:#0066cc;--accent-glow:rgba(0,102,204,.10);
+  --sel:#e05500;--hov:#007755;--danger:#cc1133;--warn:#996600;
+  --export:#6d28d9;--export-glow:rgba(109,40,217,.10);
+  --explode:#047857;--explode-glow:rgba(4,120,87,.08);
+  --orient:#be185d;--orient-glow:rgba(190,24,93,.08);
+  --ax-x:#cc3333;--ax-y:#226633;--ax-z:#2255aa;
+  --wand:#7e22ce;--wand-glow:rgba(126,34,206,.10);
+  --move:#c2410c;--move-glow:rgba(194,65,12,.10);
+  --ai:#0369a1;--ai-glow:rgba(3,105,161,.10);--ai-dark:#e0f2fe;
+  --text:#30d6ff;--text-dim:#6872a0;--text-hi:#0f1428;--text-label:#4a5280;
+}
+
+/* Smooth theme transitions on key surfaces */
+body, #toolbar, #lpanel, #rpanel,
+.lp-section, .settings-box, .ai-box, .help-box,
+.ci, .modal-box, #status, #hints {
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+}
+
+/* Light mode overrides for elements that use hardcoded dark colours */
+[data-theme="light"] body{ background:var(--bg); color:var(--text); }
+[data-theme="light"] #toolbar{ background:var(--panel); border-bottom:1px solid var(--border); }
+[data-theme="light"] #lpanel{ background:rgba(255,255,255,.97); }
+[data-theme="light"] #rpanel{ background:rgba(248,249,252,.98); border-color:var(--border-hi); }
+[data-theme="light"] .lp-section{ border-bottom:1px solid var(--border); }
+[data-theme="light"] .lp-section-header{ background:rgba(240,242,247,.6); }
+[data-theme="light"] .ci{ border-bottom:1px solid rgba(180,188,210,.3); }
+[data-theme="light"] .ci:hover{ background:rgba(0,102,204,.06); }
+[data-theme="light"] .ci.sel{ background:rgba(224,85,0,.10); }
+[data-theme="light"] .ci.face-sel{ background:rgba(126,34,206,.08); }
+[data-theme="light"] #status{ background:rgba(240,242,247,.98); border-top:1px solid var(--border); }
+[data-theme="light"] #hints{ background:rgba(255,255,255,.95); border-color:var(--border-hi); }
+[data-theme="light"] #dropzone{ background:var(--bg); }
+[data-theme="light"] #loading{ background:rgba(240,242,247,.94); }
+[data-theme="light"] .settings-box{ background:#ffffff; border-color:var(--border-hi); }
+[data-theme="light"] .settings-section{ border-bottom:1px solid var(--border); }
+[data-theme="light"] .ai-box{ background:#f8f9fc; border-color:var(--border-hi); }
+[data-theme="light"] .help-box{ background:#f8f9fc; border-color:var(--border-hi); }
+[data-theme="light"] .help-box::before,[data-theme="light"] .help-box::after{ border-color:var(--accent); }
+[data-theme="light"] .rp-hdr{ background:var(--panel); }
+[data-theme="light"] #rp-sort{ background:rgba(0,102,204,.06); border-color:rgba(0,102,204,.3); color:var(--text-hi); }
+[data-theme="light"] .rp-sel-btn{ background:var(--panel); }
+[data-theme="light"] .tbtn{ color:var(--text); border-color:var(--border-hi); }
+[data-theme="light"] .tbtn:hover{ border-color:var(--accent); color:var(--accent); background:var(--accent-glow); }
+[data-theme="light"] .meth-btn{ border-color:var(--border); color:var(--text-label); }
+[data-theme="light"] .meth-btn.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+[data-theme="light"] .action-btn{ background:var(--accent-glow); border-color:var(--accent); color:var(--accent); }
+[data-theme="light"] .half-btn{ border-color:var(--border-hi); color:var(--text-label); }
+[data-theme="light"] .ex-sl, [data-theme="light"] .wand-sl, [data-theme="light"] .warn-sl{
+  background:var(--border);
+}
+[data-theme="light"] #seg-warn{ background:rgba(204,136,0,.06); }
+[data-theme="light"] .modal-box{ background:#ffffff; border-color:var(--border-hi); }
+[data-theme="light"] .rp-action-bar{ background:rgba(204,17,51,.03); }
+[data-theme="light"] .guard-modal > div{ background:#ffffff; }
+[data-theme="light"] #guard-modal > div > div:first-child > div:last-child{
+  background:#fff8f0;
+}
+/* Three.js renderer background handled in JS via setTheme() */
 body{background:var(--bg);color:var(--text);font-family:var(--ff-ui);overflow:hidden;height:100vh;}
 
 /* ── TOOLBAR ── */
@@ -822,6 +886,18 @@ body.move.dragging #canvas{cursor:grabbing;}
   </button>
   <button class="tbtn settings-btn" id="btn-settings">
     <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 9a2 2 0 100-4 2 2 0 000 4zm0-1a1 1 0 110-2 1 1 0 010 2z"/><path d="M7 1l-.9 1.6A5 5 0 004.5 3.4L2.7 3l-1 1.7 1.3 1.2a5 5 0 000 2.2L1.7 9.3l1 1.7 1.8-.4a5 5 0 001.6.8L7 13l1-.1-.1-2-.1.1.9-1.6a5 5 0 001.6-.8l1.8.4 1-1.7-1.3-1.2a5 5 0 000-2.2L13.3 4.7l-1-1.7-1.8.4A5 5 0 009.5 2.6L8.9 1H7z" fill-rule="evenodd" clip-rule="evenodd"/></svg>SETTINGS
+  </button>
+  <!-- Theme toggle -->
+  <button class="tbtn" id="btn-theme" title="Switch between dark and light mode" style="padding:0 8px;min-width:36px;">
+    <svg id="theme-icon-dark" viewBox="0 0 14 14" fill="currentColor" width="14" height="14">
+      <!-- Moon — shown in dark mode -->
+      <path d="M12.5 9.5A5.5 5.5 0 014.5 1.5a5.5 5.5 0 100 11 5.5 5.5 0 008-3z"/>
+    </svg>
+    <svg id="theme-icon-light" viewBox="0 0 14 14" fill="currentColor" width="14" height="14" style="display:none;">
+      <!-- Sun — shown in light mode -->
+      <circle cx="7" cy="7" r="2.5"/>
+      <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10 10l1.06 1.06M10 4l1.06-1.06M2.93 11.07l1.06-1.06" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+    </svg>
   </button>
   <button class="tbtn" id="btn-load">
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="10" height="10" rx=".5"/><path d="M5 7l2 2 2-2M7 4v5" stroke-linecap="round" stroke-linejoin="round"/></svg>LOAD
@@ -5529,6 +5605,39 @@ document.getElementById('btn-load').onclick = function(e){
     _origLoadBtn && _origLoadBtn.call(this, e);
   });
 };
+
+// ══════════════════════════════════════════════
+// THEME — DARK / LIGHT
+// ══════════════════════════════════════════════
+const THEME_KEY = 'stl_wand_theme';
+
+function applyTheme(theme){
+  const isLight = theme === 'light';
+  document.documentElement.setAttribute('data-theme', isLight ? 'light' : '');
+
+  // Update 3D renderer background
+  if(scene){
+    scene.background = new THREE.Color(isLight ? 0xEDF2F4 : 0x07070f);
+  }
+
+  // Swap toolbar icons
+  document.getElementById('theme-icon-dark').style.display  = isLight ? 'none' : '';
+  document.getElementById('theme-icon-light').style.display = isLight ? '' : 'none';
+  document.getElementById('btn-theme').title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
+
+  // Persist
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+function toggleTheme(){
+  const current = localStorage.getItem(THEME_KEY) || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+
+// Apply saved theme on load (default dark)
+applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
 
 // ══════════════════════════════════════════════
 // RENDER LOOP
