@@ -780,7 +780,7 @@ body.move.dragging #canvas{cursor:grabbing;}
         LOCK LAYOUT
       </button>
     </div>
-    <div class="lp-section">
+    <div class="lp-section" data-section-id="segmentation">
       <div class="lp-title">Segmentation <em id="lp-ct"></em></div>
       <div class="seg-methods">
         <button class="meth-btn active" id="meth-conn">CONNECT</button>
@@ -799,7 +799,7 @@ body.move.dragging #canvas{cursor:grabbing;}
     </div>
 
     <!-- Wand Settings -->
-    <div class="lp-section">
+    <div class="lp-section" data-section-id="wand">
       <div class="lp-title wand-title">Wand Tolerance</div>
 
       <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;margin-bottom:8px;">
@@ -851,7 +851,7 @@ body.move.dragging #canvas{cursor:grabbing;}
         ◈ APPLY COLOR TO SELECTED TRIANGLES
       </button>
     </div>
-    <div class="lp-section">
+    <div class="lp-section" data-section-id="isolation">
       <div class="lp-title">Isolation</div>
       <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;margin-bottom:6px;">Hide everything except selected parts to focus the wand on a region.</div>
       <div class="btn-row">
@@ -861,7 +861,7 @@ body.move.dragging #canvas{cursor:grabbing;}
     </div>
 
     <!-- ORIENT / ROTATE -->
-    <div class="lp-section">
+    <div class="lp-section" data-section-id="reorient">
       <div class="lp-title orient-title">Re-Orient <em id="orient-tgt-lbl">(MODEL)</em></div>
 
       <!-- Target -->
@@ -935,7 +935,7 @@ body.move.dragging #canvas{cursor:grabbing;}
     </div>
 
     <!-- Move / Translate -->
-    <div class="lp-section">
+    <div class="lp-section" data-section-id="move">
       <div class="lp-title move-title">Translate / Move</div>
       <div id="move-context-msg" style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.5;margin-bottom:8px;padding:6px 8px;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);">
         No parts selected — drag moves the whole model.
@@ -978,7 +978,7 @@ body.move.dragging #canvas{cursor:grabbing;}
     </div>
 
     <!-- Explode -->
-    <div class="lp-section">
+    <div class="lp-section" data-section-id="explode">
       <div class="lp-title explode-title">Explode View</div>
       <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;margin-bottom:8px;">Spread parts radially so the wand can reach each one.</div>
       <div class="slider-row">
@@ -992,7 +992,7 @@ body.move.dragging #canvas{cursor:grabbing;}
     </div>
 
     <!-- Export -->
-    <div class="lp-section">
+    <div class="lp-section" data-section-id="export">
       <div class="lp-title export-title">Export STL Files</div>
       <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;margin-bottom:6px;">Each part saved as its own .stl, bundled in a .zip.</div>
       <button class="action-btn export-all" id="btn-export-all" disabled>⬇ EXPORT ALL PARTS</button>
@@ -1000,7 +1000,7 @@ body.move.dragging #canvas{cursor:grabbing;}
     </div>
 
     <!-- Tips -->
-    <div class="lp-section" style="flex:1;">
+    <div class="lp-section" data-section-id="tips" style="flex:1;">
       <div class="lp-title">Tips</div>
       <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.7;">
         <span style="color:var(--accent);">CONNECT</span> — splits bodies with no shared vertices.<br><br>
@@ -1232,6 +1232,14 @@ body.move.dragging #canvas{cursor:grabbing;}
           </button>
         </div>
         <div id="preset-hint" style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);background:rgba(74,248,255,.06);border:1px solid rgba(74,248,255,.15);padding:8px 10px;line-height:1.6;"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">SEG Panel Sections</div>
+        <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);margin-bottom:10px;line-height:1.5;">
+          Toggle which sections are visible in the left panel. Hidden sections are removed entirely; toggle back to restore.
+        </div>
+        <div id="seg-visibility-list" style="display:flex;flex-direction:column;gap:5px;"></div>
       </div>
 
       <div class="settings-section">
@@ -4428,6 +4436,104 @@ function initFontSettings(){
   });
 }
 initFontSettings();
+
+// ══════════════════════════════════════════════
+// SEG PANEL SECTION VISIBILITY
+// ══════════════════════════════════════════════
+const SEG_SECTIONS_KEY = 'stl_wand_seg_visibility';
+
+// Map of section IDs to display labels and accent colors
+const SEG_SECTION_META = {
+  segmentation: { label: 'Segmentation',    color: 'var(--accent)' },
+  wand:         { label: 'Wand Tolerance',  color: 'var(--wand)'   },
+  isolation:    { label: 'Isolation',       color: 'var(--accent)' },
+  reorient:     { label: 'Re-Orient',       color: 'var(--orient)' },
+  move:         { label: 'Translate / Move',color: 'var(--move)'   },
+  explode:      { label: 'Explode View',    color: 'var(--explode)'},
+  export:       { label: 'Export',          color: 'var(--export)' },
+  tips:         { label: 'Tips',            color: 'var(--text-dim)'},
+};
+
+// Load saved visibility state (all visible by default)
+function loadSegVisibility(){
+  try{ return JSON.parse(localStorage.getItem(SEG_SECTIONS_KEY)||'{}'); }
+  catch(e){ return {}; }
+}
+
+function saveSegVisibility(state){
+  localStorage.setItem(SEG_SECTIONS_KEY, JSON.stringify(state));
+}
+
+function applySegVisibility(state){
+  Object.entries(SEG_SECTION_META).forEach(([id])=>{
+    const sec = document.querySelector(`.lp-section[data-section-id="${id}"]`);
+    if(!sec) return;
+    const hidden = state[id] === false;
+    sec.style.display = hidden ? 'none' : '';
+  });
+}
+
+function initSegVisibility(){
+  const list = document.getElementById('seg-visibility-list');
+  if(!list) return;
+  list.innerHTML = '';
+  const state = loadSegVisibility();
+
+  Object.entries(SEG_SECTION_META).forEach(([id, meta])=>{
+    const isVisible = state[id] !== false; // default true
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);';
+
+    const label = document.createElement('span');
+    label.style.cssText = `font-family:var(--ff-mono);font-size:11px;color:${meta.color};letter-spacing:.04em;`;
+    label.textContent = meta.label;
+
+    const toggleWrap = document.createElement('div');
+    toggleWrap.className = 'settings-toggle';
+
+    const onBtn  = document.createElement('button');
+    const offBtn = document.createElement('button');
+    onBtn.textContent  = 'SHOW';
+    offBtn.textContent = 'HIDE';
+    if(isVisible){ onBtn.classList.add('active'); }
+    else          { offBtn.classList.add('active'); }
+
+    onBtn.addEventListener('click',()=>{
+      const s = loadSegVisibility();
+      s[id] = true;
+      saveSegVisibility(s);
+      applySegVisibility(s);
+      onBtn.classList.add('active');
+      offBtn.classList.remove('active');
+    });
+    offBtn.addEventListener('click',()=>{
+      const s = loadSegVisibility();
+      s[id] = false;
+      saveSegVisibility(s);
+      applySegVisibility(s);
+      offBtn.classList.add('active');
+      onBtn.classList.remove('active');
+    });
+
+    toggleWrap.appendChild(onBtn);
+    toggleWrap.appendChild(offBtn);
+    row.appendChild(label);
+    row.appendChild(toggleWrap);
+    list.appendChild(row);
+  });
+
+  // Apply current state immediately
+  applySegVisibility(state);
+}
+
+// Re-init when settings modal opens so it reflects current state
+document.getElementById('btn-settings').addEventListener('click', ()=>{
+  initSegVisibility();
+});
+
+// Apply on page load
+initSegVisibility();
 
 // ══════════════════════════════════════════════
 // SETTINGS WIRING
