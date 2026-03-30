@@ -451,6 +451,55 @@ input[type=range]:disabled{opacity:.35;pointer-events:none;}
 }
 #wand-tol-badge.on{display:block;}
 
+/* ── HELP MODAL ─────────────────────────────────────────────────── */
+#help-modal{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.85);z-index:300;
+  align-items:center;justify-content:center;
+}
+#help-modal.on{display:flex;}
+.help-box{
+  background:#09091a;border:1px solid var(--border-hi);
+  width:min(820px,96vw);height:min(640px,92vh);
+  display:flex;flex-direction:column;position:relative;overflow:hidden;
+}
+.help-box::before,.help-box::after{content:'';position:absolute;width:20px;height:20px;}
+.help-box::before{top:0;left:0;border-top:2px solid var(--accent);border-left:2px solid var(--accent);}
+.help-box::after{bottom:0;right:0;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);}
+.help-hdr{padding:14px 20px 0;display:flex;align-items:center;gap:12px;flex-shrink:0;border-bottom:1px solid var(--border);}
+.help-hdr-title{font-family:var(--ff-mono);font-size:13px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;flex:1;}
+.help-close{background:transparent;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;line-height:1;padding:0 4px;transition:color .12s;}
+.help-close:hover{color:var(--danger);}
+.help-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;padding:0 20px;}
+.help-tab{padding:8px 14px;background:transparent;border:none;border-bottom:2px solid transparent;font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);letter-spacing:.07em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.help-tab:hover{color:var(--text-hi);}
+.help-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.help-content{flex:1;overflow-y:auto;padding:20px 24px 24px;font-family:var(--ff-mono);font-size:11px;color:var(--text-label);line-height:1.75;}
+.help-content::-webkit-scrollbar{width:4px;}
+.help-content::-webkit-scrollbar-thumb{background:var(--border-hi);}
+.help-pane{display:none;}.help-pane.active{display:block;}
+.help-h1{font-size:15px;font-weight:700;color:var(--text-hi);letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.help-h2{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin:18px 0 8px;}
+.help-h2.wand{color:var(--wand);}.help-h2.warn{color:var(--warn);}.help-h2.explode{color:var(--explode);}.help-h2.export{color:var(--export);}.help-h2.orient{color:var(--orient);}.help-h2.move{color:var(--move);}
+.help-p{margin:0 0 10px;color:var(--text-label);}
+.help-krow{display:flex;align-items:baseline;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.help-krow:last-child{border-bottom:none;}
+.help-key{display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border:1px solid var(--border-hi);font-family:var(--ff-mono);font-size:9px;color:var(--text-hi);padding:2px 6px;white-space:nowrap;flex-shrink:0;min-width:60px;text-align:center;}
+.help-kdesc{color:var(--text-label);font-size:10px;}
+.help-tip{background:rgba(74,248,255,.05);border-left:2px solid var(--accent);padding:8px 12px;margin:10px 0;font-size:10px;color:var(--text-label);}
+.help-tip strong{color:var(--accent);}
+.help-warn-tip{background:rgba(255,204,0,.05);border-left:2px solid var(--warn);padding:8px 12px;margin:10px 0;font-size:10px;color:var(--text-label);}
+.help-warn-tip strong{color:var(--warn);}
+.help-step{display:flex;gap:12px;margin:8px 0;align-items:flex-start;}
+.help-step-num{width:20px;height:20px;border-radius:50%;background:rgba(74,248,255,.12);border:1px solid var(--accent);color:var(--accent);font-size:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;}
+.help-step-txt{color:var(--text-label);font-size:10px;line-height:1.6;padding-top:1px;}
+.help-step-txt strong{color:var(--text-hi);}
+.help-footer{padding:10px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;}
+.help-footer-hint{font-family:var(--ff-mono);font-size:9px;color:var(--text-dim);}
+.help-nav-btn{height:28px;padding:0 12px;background:transparent;border:1px solid var(--border-hi);color:var(--text-dim);font-family:var(--ff-mono);font-size:10px;cursor:pointer;transition:all .15s;}
+.help-nav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.help-nav-btn:disabled{opacity:.3;cursor:default;}
+
 /* ── STATUS BAR — always anchored at very bottom ── */
 #status{position:absolute;bottom:0;left:0;right:0;height:26px;background:rgba(7,7,15,.97);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:16px;font-family:var(--ff-mono);font-size:10px;color:var(--text-dim);z-index:10;}
 #s-mode{color:var(--accent);font-weight:bold;letter-spacing:.05em;}
@@ -1388,6 +1437,250 @@ body.move.dragging #canvas{cursor:grabbing;}
     </div>
     <div class="settings-footer">
       <button class="settings-cancel" id="settings-close-btn">CLOSE</button>
+      <button class="settings-cancel" id="btn-open-help" style="border-color:rgba(74,248,255,.4);color:var(--accent);margin-left:auto;">? HOW TO USE</button>
+    </div>
+  </div>
+</div>
+
+<!-- HELP / HOW TO USE MODAL -->
+<div id="help-modal">
+  <div class="help-box">
+    <div class="help-hdr">
+      <span style="font-size:16px;">?</span>
+      <span class="help-hdr-title">How to Use — STL Wand Editor</span>
+      <button class="help-close" id="help-close">✕</button>
+    </div>
+    <div class="help-tabs" id="help-tabs">
+      <button class="help-tab active" data-pane="0">Getting Started</button>
+      <button class="help-tab" data-pane="1">Segmentation</button>
+      <button class="help-tab" data-pane="2">Wand &amp; Selection</button>
+      <button class="help-tab" data-pane="3">Editing</button>
+      <button class="help-tab" data-pane="4">View &amp; Navigate</button>
+      <button class="help-tab" data-pane="5">Export</button>
+      <button class="help-tab" data-pane="6">Settings</button>
+      <button class="help-tab" data-pane="7">Keyboard Shortcuts</button>
+    </div>
+
+    <div class="help-content">
+
+      <!-- ── PANE 0: Getting Started ─────────────────────────── -->
+      <div class="help-pane active" id="help-pane-0">
+        <div class="help-h1">Getting Started</div>
+        <div class="help-p">STL Wand Editor is a browser-based tool for loading, inspecting, segmenting, and exporting 3D STL files — no installation required.</div>
+
+        <div class="help-h2">Loading a File</div>
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-txt"><strong>Drag &amp; drop</strong> any .stl file onto the viewport, or click the <strong>LOAD</strong> button in the toolbar to browse.</div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-txt">The file is parsed entirely in your browser — nothing is uploaded to any server.</div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-txt">Once loaded, the model appears in the 3D viewport and the <strong>SEG panel</strong> opens on the left, the <strong>Parts panel</strong> on the right.</div></div>
+
+        <div class="help-tip"><strong>Supported:</strong> Both binary and ASCII STL formats. Files up to 256 MB and up to 3 million triangles.</div>
+
+        <div class="help-h2">Basic Workflow</div>
+        <div class="help-step"><div class="help-step-num">1</div><div class="help-step-txt"><strong>Load</strong> your STL file.</div></div>
+        <div class="help-step"><div class="help-step-num">2</div><div class="help-step-txt"><strong>Segment</strong> the model into parts using CONNECT or ANGLE mode.</div></div>
+        <div class="help-step"><div class="help-step-num">3</div><div class="help-step-txt"><strong>Select</strong> parts or individual triangles with the Wand or Box Select tool.</div></div>
+        <div class="help-step"><div class="help-step-num">4</div><div class="help-step-txt"><strong>Edit</strong> — delete, recolor, move, or re-orient geometry as needed.</div></div>
+        <div class="help-step"><div class="help-step-num">5</div><div class="help-step-txt"><strong>Export</strong> each part as a separate STL file bundled into a ZIP.</div></div>
+
+        <div class="help-h2">Interface Overview</div>
+        <div class="help-p">The toolbar runs across the top. The <strong>SEG panel</strong> (left) contains all segmentation and editing tools. The <strong>Parts panel</strong> (right) lists every segmented part. The 3D viewport fills the centre.</div>
+        <div class="help-warn-tip"><strong>Unsaved work:</strong> The editor runs entirely in your browser with no auto-save. Export your parts before refreshing or closing the tab.</div>
+      </div>
+
+      <!-- ── PANE 1: Segmentation ────────────────────────────── -->
+      <div class="help-pane" id="help-pane-1">
+        <div class="help-h1">Segmentation</div>
+        <div class="help-p">Segmentation splits your STL model into named parts. Open the <strong>Segmentation</strong> section in the SEG panel to configure and run it.</div>
+
+        <div class="help-h2">CONNECT Mode</div>
+        <div class="help-p">Splits the model at vertices that are not physically shared — i.e. bodies that are geometrically disconnected. Best for models made of multiple separate objects that were exported together into one STL.</div>
+        <div class="help-tip"><strong>Use CONNECT when:</strong> your model has multiple separate bodies (e.g. screws in an assembly, multi-part prints).</div>
+
+        <div class="help-h2 warn">ANGLE Mode</div>
+        <div class="help-p">Splits the model at sharp edges where adjacent triangles exceed the <strong>Break Angle</strong> threshold. Use this when all parts are connected into one mesh but you want to separate faces or surfaces.</div>
+        <div class="help-tip"><strong>Recommended angles:</strong> 15–25° for mechanical/flat-faced parts. 30–45° for objects with moderate curvature. Lower = more splits.</div>
+
+        <div class="help-h2">Sliders</div>
+        <div class="help-krow"><span class="help-key">BREAK ANGLE</span><span class="help-kdesc">Only applies in ANGLE mode. Sets the sharpness threshold at which an edge becomes a split boundary.</span></div>
+        <div class="help-krow"><span class="help-key">MIN TRIANGLES</span><span class="help-kdesc">Any part with fewer triangles than this value is merged into its nearest neighbour. Cleans up tiny fragments.</span></div>
+
+        <div class="help-h2">RE-SEGMENT</div>
+        <div class="help-p">Applies the current mode and settings to re-split the model. Any deleted triangles are preserved — the segmentation reads the current state of the geometry, not the original file.</div>
+
+        <div class="help-h2">AI Advisor</div>
+        <div class="help-p">Click <strong>AI ADVISOR</strong> in the toolbar to analyse your model's geometry. The advisor examines triangle counts, surface normals, edge sharpness distribution, and aspect ratios, then recommends whether to use CONNECT or ANGLE mode and suggests optimal settings. Requires an AI proxy to be configured (see Settings).</div>
+      </div>
+
+      <!-- ── PANE 2: Wand & Selection ───────────────────────── -->
+      <div class="help-pane" id="help-pane-2">
+        <div class="help-h1">Wand &amp; Selection Tools</div>
+
+        <div class="help-h2 wand">✦ Wand Tool  (W)</div>
+        <div class="help-p">The Wand selects individual triangles or fills a region by surface normal angle — like Photoshop's magic wand but in 3D.</div>
+        <div class="help-krow"><span class="help-key">CLICK</span><span class="help-kdesc">Select one triangle (at 0% tolerance) or flood-fill a region matching the surface angle.</span></div>
+        <div class="help-krow"><span class="help-key">SHIFT+CLICK</span><span class="help-kdesc">Add individual triangles to the current selection without replacing it.</span></div>
+        <div class="help-krow"><span class="help-key">SHIFT+DRAG</span><span class="help-kdesc">Paint triangles as you move the cursor — like a brush over the surface.</span></div>
+        <div class="help-krow"><span class="help-key">CTRL+CLICK</span><span class="help-kdesc">Toggle a single triangle in or out of the selection.</span></div>
+
+        <div class="help-h2 wand">Wand Tolerance</div>
+        <div class="help-krow"><span class="help-key">0%</span><span class="help-kdesc">Single triangle click only — the most precise selection mode.</span></div>
+        <div class="help-krow"><span class="help-key">1–25%</span><span class="help-kdesc">Selects flat or co-planar faces. Ideal for mechanical parts.</span></div>
+        <div class="help-krow"><span class="help-key">26–60%</span><span class="help-kdesc">Gently curved surfaces — selects an entire rounded face.</span></div>
+        <div class="help-krow"><span class="help-key">61–100%</span><span class="help-kdesc">Entire connected mesh — one click selects everything.</span></div>
+        <div class="help-tip"><strong>Contiguous:</strong> When checked, the wand only fills triangles connected by shared edges. Uncheck to select all matching triangles anywhere on the mesh regardless of connectivity.</div>
+
+        <div class="help-h2">☐ Box Select  (B)</div>
+        <div class="help-p">Drag a rectangle over the viewport to select all triangle centroids that fall inside the box. Hold <strong>SHIFT</strong> while dragging to add to an existing selection.</div>
+
+        <div class="help-h2">Parts Panel Selection</div>
+        <div class="help-p">Click any part row in the right panel to select that whole part. Hold <strong>SHIFT</strong> to range-select. Hold <strong>CTRL/CMD</strong> to toggle individual parts.</div>
+
+        <div class="help-h2">Triangle Color</div>
+        <div class="help-p">With triangles selected (5 or more), use the <strong>Triangle Color</strong> section in the Wand panel to paint them a custom colour. Choose from 8 presets or any colour via the picker. The colour is applied as a persistent overlay — it does not change the exported geometry.</div>
+
+        <div class="help-h2">Triangle Groups</div>
+        <div class="help-p">Select 5 or more triangles, then click <strong>◈ GROUP SELECTED TRIANGLES</strong> in the Parts panel action bar. The group is saved under its parent part with a unique colour. Each group can be renamed, shown/hidden, re-selected, or deleted from the Parts list.</div>
+      </div>
+
+      <!-- ── PANE 3: Editing ────────────────────────────────── -->
+      <div class="help-pane" id="help-pane-3">
+        <div class="help-h1">Editing</div>
+
+        <div class="help-h2 warn">Delete</div>
+        <div class="help-p">Select parts in the Parts panel and click <strong>DELETE</strong> to remove entire parts. Select triangles with the Wand and click <strong>DELETE TRIANGLES</strong> to surgically remove only those faces from the mesh. Deletions are reflected in re-segmentation.</div>
+        <div class="help-tip"><strong>Undo:</strong> Click <strong>UNDO</strong> in the toolbar (or press nothing — there is currently one undo level) to reverse the last deletion.</div>
+
+        <div class="help-h2 orient">Re-Orient</div>
+        <div class="help-p">Use the X / Y / Z sliders or quick-step buttons (−90, −45, 180, +45, +90) to rotate the model or a selection. Rotation is auto-baked when you release the slider — changes are written directly into the geometry.</div>
+        <div class="help-krow"><span class="help-key">WHOLE MODEL</span><span class="help-kdesc">Applies rotation to all parts together.</span></div>
+        <div class="help-krow"><span class="help-key">SELECTION</span><span class="help-kdesc">Rotates only the currently selected parts around their shared centre.</span></div>
+        <div class="help-krow"><span class="help-key">RESET</span><span class="help-kdesc">Returns the orientation preview to 0° on all axes.</span></div>
+
+        <div class="help-h2 move">Translate / Move  (M)</div>
+        <div class="help-p">Switch to Move mode using the <strong>MOVE</strong> button or press M.</div>
+        <div class="help-krow"><span class="help-key">LMB DRAG</span><span class="help-kdesc">Slides the model (or selected parts) along the X/Z ground plane.</span></div>
+        <div class="help-krow"><span class="help-key">SHIFT+DRAG</span><span class="help-kdesc">Moves vertically on the Y axis.</span></div>
+        <div class="help-krow"><span class="help-key">GIZMO HANDLES</span><span class="help-kdesc">Drag the red/green/blue axis handles for constrained single-axis movement.</span></div>
+        <div class="help-krow"><span class="help-key">TO GROUND</span><span class="help-kdesc">Snaps the lowest vertex of the selection to Y = 0.</span></div>
+
+        <div class="help-h2 explode">Explode View</div>
+        <div class="help-p">The <strong>SPREAD</strong> slider fans all parts radially outward from the model centre, making it easy to use the Wand on inner surfaces without isolation.</div>
+        <div class="help-p">The <strong>TRIANGLE EXPLODE</strong> sub-section lifts selected triangles away from their mesh so you can inspect or edit a specific face region. Select triangles with the Wand, click <strong>⚡ EXPLODE SEL</strong>, then adjust the spread slider. Click <strong>RESET</strong> to merge them back.</div>
+
+        <div class="help-h2">Isolation</div>
+        <div class="help-p">Select one or more parts, then click <strong>ISOLATE SEL</strong> to hide everything else. <strong>SHOW ALL</strong> restores visibility. Isolation is temporary — it does not affect exports.</div>
+      </div>
+
+      <!-- ── PANE 4: View & Navigate ─────────────────────────── -->
+      <div class="help-pane" id="help-pane-4">
+        <div class="help-h1">View &amp; Navigation</div>
+
+        <div class="help-h2">Orbit Controls</div>
+        <div class="help-krow"><span class="help-key">LMB DRAG</span><span class="help-kdesc">Orbit (rotate the camera around the model).</span></div>
+        <div class="help-krow"><span class="help-key">RMB DRAG</span><span class="help-kdesc">Pan (slide the camera left/right/up/down).</span></div>
+        <div class="help-krow"><span class="help-key">SCROLL</span><span class="help-kdesc">Zoom in/out. Zoom follows the cursor position for precision.</span></div>
+        <div class="help-tip"><strong>Orbit presets:</strong> Change the mouse button mapping to match your preferred 3D tool (Default, Fusion 360, Tinkercad, FreeCAD, Blender, Maya) in <strong>Settings → Orbit Preset</strong>.</div>
+
+        <div class="help-h2">View Cube</div>
+        <div class="help-p">The cube in the bottom-left shows the current camera orientation. Click any face label (FRONT, BACK, LEFT, RIGHT, TOP, BTM) to snap to that view with a smooth animation. Drag the cube to orbit the camera directly.</div>
+
+        <div class="help-h2">Toolbar View Modes</div>
+        <div class="help-krow"><span class="help-key">ORBIT</span><span class="help-kdesc">Default navigation mode. Left-drag to orbit.</span></div>
+        <div class="help-krow"><span class="help-key">WAND  W</span><span class="help-kdesc">Triangle selection mode. Click/drag to select faces.</span></div>
+        <div class="help-krow"><span class="help-key">BOX SEL  B</span><span class="help-kdesc">Rectangle selection mode. Drag to select a region.</span></div>
+        <div class="help-krow"><span class="help-key">MOVE  M</span><span class="help-kdesc">Translation mode. Drag to move parts.</span></div>
+
+        <div class="help-h2">HUD Badges</div>
+        <div class="help-p">Floating badges appear when certain modes are active — <strong>EXPLODE ACTIVE</strong> when the spread slider is above 0, and <strong>ROTATION PREVIEW</strong> when the orient sliders are non-zero. Each badge has a <strong>⠿ drag handle</strong> — grab it to reposition the badge anywhere in the viewport.</div>
+
+        <div class="help-h2">Grid &amp; Axes</div>
+        <div class="help-p">The grid represents the ground plane (Y = 0). The axis indicator (X = red, Y = green, Z = blue) shows world orientation. Both can be toggled in <strong>Settings → View</strong>.</div>
+      </div>
+
+      <!-- ── PANE 5: Export ─────────────────────────────────── -->
+      <div class="help-pane" id="help-pane-5">
+        <div class="help-h1">Export</div>
+        <div class="help-p">STL Wand Editor exports each segmented part as its own binary STL file, bundled together in a single .zip download.</div>
+
+        <div class="help-h2">Export All Parts</div>
+        <div class="help-p">Click <strong>EXPORT</strong> in the toolbar or <strong>⬇ EXPORT ALL PARTS</strong> in the SEG panel to export every part. A modal will appear to configure the output.</div>
+
+        <div class="help-h2">Export Selected Parts</div>
+        <div class="help-p">Select parts in the Parts panel first, then click <strong>⬇ EXPORT SELECTED</strong> to export only the chosen parts.</div>
+
+        <div class="help-h2">Export Options</div>
+        <div class="help-krow"><span class="help-key">FILE PREFIX</span><span class="help-kdesc">The base name used for each exported file — e.g. "widget" produces widget_part_001.stl, widget_part_002.stl, etc.</span></div>
+        <div class="help-krow"><span class="help-key">KEEP ORIGINAL</span><span class="help-kdesc">Exports each part with its current world position preserved.</span></div>
+        <div class="help-krow"><span class="help-key">CENTER EACH PART</span><span class="help-kdesc">Re-centres each part to the coordinate origin before export — useful for individual printing.</span></div>
+
+        <div class="help-warn-tip"><strong>Bake before exporting:</strong> If you've used Re-Orient or Move, the changes are auto-baked into the geometry as you work. Check the status bar for confirmation before exporting.</div>
+
+        <div class="help-tip"><strong>Tip:</strong> Export early and often. The browser does not auto-save your session — a refresh will lose unsaved edits.</div>
+      </div>
+
+      <!-- ── PANE 6: Settings ───────────────────────────────── -->
+      <div class="help-pane" id="help-pane-6">
+        <div class="help-h1">Settings</div>
+        <div class="help-p">Click the <strong>⚙ SETTINGS</strong> button in the toolbar to open the settings panel.</div>
+
+        <div class="help-h2">SEG Panel Sections</div>
+        <div class="help-p">Toggle which sections are visible in the left SEG panel. Hidden sections are removed entirely from the layout. Use this to declutter the panel by hiding tools you don't use.</div>
+
+        <div class="help-h2">Orbit Preset</div>
+        <div class="help-p">Choose a mouse button mapping that matches your preferred 3D software. Options: Default, Fusion 360, Tinkercad, FreeCAD, Blender, Maya.</div>
+
+        <div class="help-h2">View</div>
+        <div class="help-krow"><span class="help-key">VIEW CUBE</span><span class="help-kdesc">Show or hide the orientation cube in the bottom-left of the viewport.</span></div>
+        <div class="help-krow"><span class="help-key">GRID</span><span class="help-kdesc">Show or hide the ground plane grid.</span></div>
+        <div class="help-krow"><span class="help-key">INVERT ZOOM</span><span class="help-kdesc">Reverses the scroll wheel zoom direction.</span></div>
+
+        <div class="help-h2">Typography</div>
+        <div class="help-p">Change the UI and monospace fonts used throughout the interface. Choose from 8 options for each. Adjust the base font size from 9px to 14px. Click <strong>✓ APPLY FONT CHANGES</strong> to apply — fonts are saved to your browser and persist across visits.</div>
+
+        <div class="help-h2">SEG Panel Layout</div>
+        <div class="help-p">The SEG panel sections can be reordered by drag-and-drop. A <strong>⠿ handle</strong> on each section header lets you drag it to a new position. Click <strong>LOCK LAYOUT</strong> to freeze the order and prevent accidental moves. Unlock to rearrange again.</div>
+
+        <div class="help-h2">AI Advisor Proxy</div>
+        <div class="help-p">The AI Advisor feature requires a backend proxy URL. Click <strong>⚙ AI PROXY</strong> in the AI Advisor modal footer to configure the URL of your Cloudflare Worker proxy. The proxy holds your Anthropic API key server-side — no key is ever stored in your browser.</div>
+      </div>
+
+      <!-- ── PANE 7: Keyboard Shortcuts ─────────────────────── -->
+      <div class="help-pane" id="help-pane-7">
+        <div class="help-h1">Keyboard Shortcuts</div>
+
+        <div class="help-h2">Tool Switching</div>
+        <div class="help-krow"><span class="help-key">W</span><span class="help-kdesc">Switch to Wand (triangle selection) mode.</span></div>
+        <div class="help-krow"><span class="help-key">B</span><span class="help-kdesc">Switch to Box Select mode.</span></div>
+        <div class="help-krow"><span class="help-key">M</span><span class="help-kdesc">Switch to Move / Translate mode.</span></div>
+        <div class="help-krow"><span class="help-key">O</span><span class="help-kdesc">Return to Orbit mode from any other tool.</span></div>
+
+        <div class="help-h2">Actions</div>
+        <div class="help-krow"><span class="help-key">DEL / Backspace</span><span class="help-kdesc">Delete selected parts or selected triangles (whichever is active).</span></div>
+        <div class="help-krow"><span class="help-key">I</span><span class="help-kdesc">Isolate selected parts (hide everything else).</span></div>
+        <div class="help-krow"><span class="help-key">E</span><span class="help-kdesc">Open the Export modal.</span></div>
+        <div class="help-krow"><span class="help-key">F5 / Ctrl+R</span><span class="help-kdesc">If a model is loaded, shows the unsaved work guard before refreshing.</span></div>
+
+        <div class="help-h2">Wand Mode Modifiers</div>
+        <div class="help-krow"><span class="help-key">SHIFT+Click</span><span class="help-kdesc">Add individual triangles to the selection.</span></div>
+        <div class="help-krow"><span class="help-key">SHIFT+Drag</span><span class="help-kdesc">Paint triangles continuously as you move the cursor.</span></div>
+        <div class="help-krow"><span class="help-key">CTRL+Click</span><span class="help-kdesc">Toggle a single triangle in or out of the selection.</span></div>
+
+        <div class="help-h2">Parts Panel</div>
+        <div class="help-krow"><span class="help-key">SHIFT+Click</span><span class="help-kdesc">Range-select rows in the Parts panel.</span></div>
+        <div class="help-krow"><span class="help-key">CTRL+Click</span><span class="help-kdesc">Toggle individual part rows in the selection.</span></div>
+
+        <div class="help-h2">Navigation</div>
+        <div class="help-krow"><span class="help-key">LMB Drag</span><span class="help-kdesc">Orbit camera (Default preset).</span></div>
+        <div class="help-krow"><span class="help-key">RMB Drag</span><span class="help-kdesc">Pan camera.</span></div>
+        <div class="help-krow"><span class="help-key">Scroll</span><span class="help-kdesc">Zoom to cursor position.</span></div>
+      </div>
+
+    </div><!-- /.help-content -->
+
+    <div class="help-footer">
+      <button class="help-nav-btn" id="help-prev">← PREV</button>
+      <span class="help-footer-hint" id="help-page-indicator">1 / 8</span>
+      <button class="help-nav-btn" id="help-next">NEXT →</button>
     </div>
   </div>
 </div>
@@ -4821,6 +5114,57 @@ document.getElementById('btn-settings').addEventListener('click', ()=>{
 
 // Apply on page load
 initSegVisibility();
+
+// ══════════════════════════════════════════════
+// HELP MODAL
+// ══════════════════════════════════════════════
+(function initHelp(){
+  const modal  = document.getElementById('help-modal');
+  const tabs   = document.querySelectorAll('.help-tab');
+  const panes  = document.querySelectorAll('.help-pane');
+  const prevBtn= document.getElementById('help-prev');
+  const nextBtn= document.getElementById('help-next');
+  const indic  = document.getElementById('help-page-indicator');
+  const total  = tabs.length;
+  let current  = 0;
+
+  function goTo(idx){
+    current = Math.max(0, Math.min(total-1, idx));
+    tabs.forEach((t,i)=>  t.classList.toggle('active', i===current));
+    panes.forEach((p,i)=> p.classList.toggle('active', i===current));
+    indic.textContent = `${current+1} / ${total}`;
+    prevBtn.disabled = current===0;
+    nextBtn.disabled = current===total-1;
+    // Scroll content to top on tab change
+    modal.querySelector('.help-content').scrollTop = 0;
+  }
+
+  // Tab clicks
+  tabs.forEach((tab,i)=> tab.addEventListener('click',()=>goTo(i)));
+
+  // Prev / Next
+  prevBtn.addEventListener('click',()=>goTo(current-1));
+  nextBtn.addEventListener('click',()=>goTo(current+1));
+
+  // Open
+  function openHelp(){
+    modal.classList.add('on');
+    goTo(0);
+    // Close settings if open
+    document.getElementById('settings-modal').classList.remove('on');
+  }
+
+  // Close
+  document.getElementById('help-close').addEventListener('click',()=>modal.classList.remove('on'));
+  modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('on'); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&modal.classList.contains('on')) modal.classList.remove('on'); });
+
+  // Wire open button in settings footer
+  document.getElementById('btn-open-help').addEventListener('click', openHelp);
+
+  // Init state
+  goTo(0);
+})();
 
 // ══════════════════════════════════════════════
 // SETTINGS WIRING
