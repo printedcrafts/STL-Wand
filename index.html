@@ -284,8 +284,40 @@ input[type=range]:disabled{opacity:.35;pointer-events:none;}
   padding:0 4px;border-radius:2px;white-space:nowrap;
 }
 
-/* action bar at bottom of list */
-.rp-action-bar{
+/* ── TRIANGLE GROUPS ── */
+.ci-group-row{
+  display:flex;align-items:center;padding:3px 8px 3px 26px;gap:6px;
+  background:rgba(192,132,252,.06);border-bottom:1px solid rgba(192,132,252,.12);
+  cursor:pointer;user-select:none;transition:background .1s;
+}
+.ci-group-row:hover{background:rgba(192,132,252,.12);}
+.ci-group-row.sel{background:rgba(255,102,0,.12);}
+.ci-group-chevron{
+  font-size:10px;color:var(--wand);flex-shrink:0;
+  transition:transform .15s;width:10px;text-align:center;
+}
+.ci-group-chevron.open{transform:rotate(90deg);}
+.ci-group-name{
+  flex:1;font-family:var(--ff-mono);font-size:10px;color:var(--wand);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ci-group-count{font-family:var(--ff-mono);font-size:9px;color:var(--text-dim);white-space:nowrap;}
+.ci-group-actions{display:flex;gap:3px;flex-shrink:0;}
+.ci-group-btn{
+  height:16px;padding:0 5px;background:transparent;
+  border:1px solid rgba(192,132,252,.3);color:var(--wand);
+  font-family:var(--ff-mono);font-size:8px;cursor:pointer;
+  transition:all .12s;white-space:nowrap;
+}
+.ci-group-btn:hover{background:rgba(192,132,252,.18);border-color:var(--wand);}
+.ci-group-btn.danger{border-color:rgba(255,51,85,.3);color:var(--danger);}
+.ci-group-btn.danger:hover{background:rgba(255,51,85,.15);border-color:var(--danger);}
+/* staged group preview bar (inside part row) */
+.ci-group-pending{
+  display:flex;align-items:center;gap:5px;padding:3px 8px 3px 26px;
+  background:rgba(192,132,252,.03);border-bottom:1px solid rgba(192,132,252,.08);
+}
+.ci-group-pending-label{font-family:var(--ff-mono);font-size:9px;color:var(--text-dim);flex:1;}
   display:none;padding:6px 8px;gap:4px;border-top:1px solid var(--border);
   flex-shrink:0;background:rgba(255,51,85,.04);flex-direction:column;
 }
@@ -1032,6 +1064,11 @@ body.move.dragging #canvas{cursor:grabbing;}
       <!-- Action bar (shown when selection active) -->
       <div class="rp-action-bar" id="rp-action-bar">
         <button class="rp-del-btn" id="rp-del-btn">🗑 DELETE SELECTED (<span id="rp-del-ct">0</span>)</button>
+        <button id="rp-group-btn" style="
+          width:100%;height:26px;background:rgba(192,132,252,.1);border:1px solid rgba(192,132,252,.4);
+          color:var(--wand);font-family:var(--ff-mono);font-size:10px;letter-spacing:.06em;
+          cursor:pointer;transition:all .15s;display:none;
+        ">◈ GROUP SELECTED TRIANGLES</button>
         <button class="rp-iso-btn" id="rp-iso-btn">◎ ISOLATE SELECTED</button>
       </div>
     </div>
@@ -1219,6 +1256,80 @@ body.move.dragging #canvas{cursor:grabbing;}
             <button id="opt-zoom-norm" class="active" onclick="invertZoom=false;this.classList.add('active');document.getElementById('opt-zoom-inv').classList.remove('active')">NORMAL</button>
             <button id="opt-zoom-inv"  onclick="invertZoom=true;this.classList.add('active');document.getElementById('opt-zoom-norm').classList.remove('active')">INVERTED</button>
           </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Typography</div>
+
+        <!-- UI Font -->
+        <div class="settings-row" style="align-items:flex-start;flex-direction:column;gap:6px;">
+          <span class="settings-label">UI FONT (labels, buttons, panels)</span>
+          <select id="opt-ui-font" style="
+            width:100%;height:32px;background:rgba(255,255,255,.04);
+            border:1px solid var(--border-hi);color:var(--text-hi);
+            font-family:var(--ff-mono);font-size:10px;padding:0 8px;
+            outline:none;cursor:pointer;appearance:auto;">
+            <option value="Rajdhani">Rajdhani (default — compact, technical)</option>
+            <option value="Inter">Inter — clean, highly readable</option>
+            <option value="IBM Plex Sans">IBM Plex Sans — professional, neutral</option>
+            <option value="Nunito">Nunito — rounded, friendly</option>
+            <option value="Barlow">Barlow — condensed, modern</option>
+            <option value="DM Sans">DM Sans — geometric, legible</option>
+            <option value="Outfit">Outfit — minimal, contemporary</option>
+            <option value="Noto Sans">Noto Sans — universal coverage</option>
+          </select>
+        </div>
+
+        <!-- Mono Font -->
+        <div class="settings-row" style="align-items:flex-start;flex-direction:column;gap:6px;margin-top:8px;">
+          <span class="settings-label">MONO FONT (data values, codes, labels)</span>
+          <select id="opt-mono-font" style="
+            width:100%;height:32px;background:rgba(255,255,255,.04);
+            border:1px solid var(--border-hi);color:var(--text-hi);
+            font-family:var(--ff-mono);font-size:10px;padding:0 8px;
+            outline:none;cursor:pointer;appearance:auto;">
+            <option value="Share Tech Mono">Share Tech Mono (default — techy)</option>
+            <option value="JetBrains Mono">JetBrains Mono — developer favourite</option>
+            <option value="Fira Code">Fira Code — ligatures, highly readable</option>
+            <option value="Source Code Pro">Source Code Pro — classic, clean</option>
+            <option value="IBM Plex Mono">IBM Plex Mono — balanced, crisp</option>
+            <option value="Inconsolata">Inconsolata — narrow, elegant</option>
+            <option value="Roboto Mono">Roboto Mono — familiar, neutral</option>
+            <option value="Space Mono">Space Mono — wide, retro</option>
+          </select>
+        </div>
+
+        <!-- Font Size -->
+        <div class="settings-row" style="margin-top:10px;">
+          <span class="settings-label">BASE FONT SIZE</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="range" id="opt-font-size" min="9" max="14" value="10" step="1"
+              style="width:90px;height:3px;-webkit-appearance:none;appearance:none;background:var(--border-hi);border-radius:2px;cursor:pointer;">
+            <span id="opt-font-size-lbl" style="font-family:var(--ff-mono);font-size:10px;color:var(--text-hi);min-width:28px;">10px</span>
+          </div>
+        </div>
+
+        <!-- Live preview -->
+        <div id="font-preview" style="
+          margin-top:10px;padding:10px 12px;
+          background:rgba(255,255,255,.03);border:1px solid var(--border-hi);
+          line-height:1.7;
+        ">
+          <div id="fp-ui"  style="font-size:13px;color:var(--text-hi);margin-bottom:4px;">UI Font — PART_001  ORBIT  WAND  DELETE</div>
+          <div id="fp-mono"style="font-size:11px;color:var(--accent);">MONO — X: 12.45  Y: -3.80  Z: 0.00  ▲ 1,335</div>
+        </div>
+
+        <!-- Apply button -->
+        <button id="btn-apply-font" style="
+          width:100%;height:30px;margin-top:8px;
+          background:var(--accent-glow);border:1px solid var(--accent);
+          color:var(--accent);font-family:var(--ff-mono);font-size:10px;
+          letter-spacing:.08em;cursor:pointer;transition:all .15s;">
+          ✓ APPLY FONT CHANGES
+        </button>
+        <div style="font-family:var(--ff-mono);font-size:9px;color:var(--text-dim);margin-top:5px;line-height:1.5;">
+          Fonts load from Google Fonts. Saved to browser for next visit.
         </div>
       </div>
 
@@ -1829,6 +1940,78 @@ function buildFaceAdj(mesh){
 // overlayMeshes:  Map<Mesh, THREE.Mesh>   — orange highlight overlay per mesh
 const faceSelections = new Map();
 const overlayMeshes  = new Map();
+
+// ── Triangle Groups ──────────────────────────────────────────────────────────
+// triGroups: Map<Mesh, Array<{id, name, faces:Set<number>, collapsed:boolean, overlay:THREE.Mesh|null}>>
+// A "group" is a named, persistent set of 5+ triangles on a single mesh.
+const triGroups = new Map();
+let _groupCounter = 0;
+
+function getGroupsForMesh(mesh){ return triGroups.get(mesh)||[]; }
+
+function commitFaceSelectionAsGroup(mesh){
+  const sel = faceSelections.get(mesh);
+  if(!sel || sel.size < 5) return null;
+  const id = ++_groupCounter;
+  const name = `GROUP_${String(id).padStart(3,'0')}`;
+  const g = { id, name, faces: new Set(sel), collapsed: false };
+  if(!triGroups.has(mesh)) triGroups.set(mesh, []);
+  triGroups.get(mesh).push(g);
+  // Build overlay immediately (scene_group_ref must be set)
+  rebuildGroupOverlay(mesh, g);
+  // Clear the temporary face selection
+  faceSelections.delete(mesh);
+  rebuildOverlay(mesh);
+  return g;
+}
+
+function deleteGroup(mesh, groupId){
+  if(g.overlay){ if(g.overlay.parent) g.overlay.parent.remove(g.overlay); g.overlay.geometry.dispose(); g.overlay=null; }
+  if(!scene_group_ref) return;
+  const pos = mesh.geometry.attributes.position.array;
+  const out = new Float32Array(g.faces.size * 9);
+  let i=0;
+  for(const f of g.faces){ const b=f*9; for(let v=0;v<9;v++) out[i++]=pos[b+v]; }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(out,3));
+  const palette=[0xff6600,0x3b82f6,0x22c55e,0xf59e0b,0xa855f7,0xec4899,0x38bdf8,0x84cc16];
+  const col = palette[(g.id-1)%palette.length];
+  const mat = new THREE.MeshBasicMaterial({
+    color:col, side:THREE.DoubleSide,
+    polygonOffset:true, polygonOffsetFactor:-3, polygonOffsetUnits:-3,
+    transparent:true, opacity:0.88
+  });
+  const ov = new THREE.Mesh(geo, mat);
+  ov.position.copy(mesh.position);
+  ov.rotation.copy(mesh.rotation);
+  ov.userData.isGroupOverlay = true;
+  ov.visible = !g.collapsed;
+  g.overlay = ov;
+  scene_group_ref.add(ov);
+}
+
+function deleteGroup(mesh, groupId){
+  const arr = triGroups.get(mesh);
+  if(!arr) return;
+  const idx = arr.findIndex(g=>g.id===groupId);
+  if(idx<0) return;
+  const g = arr[idx];
+  if(g.overlay && g.overlay.parent){ g.overlay.parent.remove(g.overlay); g.overlay.geometry.dispose(); }
+  arr.splice(idx,1);
+  if(arr.length===0) triGroups.delete(mesh);
+}
+
+function renameGroup(mesh, groupId, newName){
+  const g = (triGroups.get(mesh)||[]).find(g=>g.id===groupId);
+  if(g) g.name = newName.trim().toUpperCase().replace(/[^A-Z0-9_\- ]/g,'')||g.name;
+}
+
+function toggleGroupVisibility(mesh, groupId){
+  const g = (triGroups.get(mesh)||[]).find(g=>g.id===groupId);
+  if(!g) return;
+  g.collapsed = !g.collapsed;
+  if(g.overlay) g.overlay.visible = !g.collapsed;
+}
 
 const MAT_FACE_HL = new THREE.MeshBasicMaterial({
   color: 0xff6600, side: THREE.DoubleSide,
@@ -2604,6 +2787,7 @@ async function buildMeshes(msg,fitCam){
 
   if(group) scene.remove(group);
   group=ng; meshes=built; selSet.clear(); hiddenSet.clear(); hovMesh=null;
+  scene_group_ref = group; // keep group overlay reference in sync
   clearFaceSel();
   scene.add(group);
 
@@ -2832,7 +3016,6 @@ function buildList(){
   list.innerHTML='';
   document.getElementById('rp-ct').textContent=` (${meshes.length})`;
 
-  // Count totals for display
   const partSel=selSet.size;
   const totalFaceTri=totalFaceSelCount();
   const faceMeshes=faceSelections.size;
@@ -2845,17 +3028,19 @@ function buildList(){
     faceCt.textContent=`${totalFaceTri.toLocaleString()} tri (${faceMeshes} mesh)`;
     faceCt.style.display='';
   } else {
-    faceCt.textContent='';
-    faceCt.style.display='none';
+    faceCt.textContent=''; faceCt.style.display='none';
   }
 
-  // Action bar: show when part OR face selection active
   const hasAnySelection = partSel>0 || totalFaceTri>0;
   document.getElementById('rp-action-bar').classList.toggle('on', hasAnySelection);
-  // Update delete button label to reflect what will be deleted
+
+  // Show group button only when 5+ triangles are face-selected
+  const groupBtn=document.getElementById('rp-group-btn');
+  groupBtn.style.display=(totalFaceTri>=5)?'':'none';
+
   const delBtn=document.getElementById('rp-del-btn');
   const delCt=document.getElementById('rp-del-ct');
-  if(totalFaceTri>0 && partSel===0){
+  if(totalFaceTri>0&&partSel===0){
     delBtn.firstChild.textContent='🗑 DELETE TRIANGLES (';
     delCt.textContent=totalFaceTri.toLocaleString();
     delBtn.lastChild.textContent=')';
@@ -2869,16 +3054,18 @@ function buildList(){
   sorted.forEach(({m,i},rowIdx)=>{
     const isSel=selSet.has(m);
     const isHid=hiddenSet.has(m);
-    const hasFaceSel=faceSelections.has(m) && faceSelections.get(m).size>0;
+    const hasFaceSel=faceSelections.has(m)&&faceSelections.get(m).size>0;
+    const groups=getGroupsForMesh(m);
+    const hasGroups=groups.length>0;
 
+    // ── Part row ──
     const d=document.createElement('div');
     let cls='ci';
-    if(isSel)       cls+=' sel';
-    if(hasFaceSel)  cls+=' face-sel';
-    if(isHid)       cls+=' iso-hidden';
+    if(isSel) cls+=' sel';
+    if(hasFaceSel) cls+=' face-sel';
+    if(isHid) cls+=' iso-hidden';
     d.className=cls;
-    d.dataset.rowIdx=rowIdx;
-    d.dataset.meshIdx=i;
+    d.dataset.rowIdx=rowIdx; d.dataset.meshIdx=i;
 
     const cb=document.createElement('input');
     cb.type='checkbox'; cb.className='ci-cb'; cb.checked=isSel; cb.tabIndex=-1;
@@ -2888,12 +3075,17 @@ function buildList(){
     nm.textContent=`PART_${String(i+1).padStart(3,'0')}`;
 
     const tri=document.createElement('div'); tri.className='ci-tri';
-
     if(hasFaceSel){
-      const faceCount=faceSelections.get(m).size;
-      tri.innerHTML=`<span class="ci-face-badge">${faceCount.toLocaleString()}▲ sel</span>`;
+      const fc=faceSelections.get(m).size;
+      tri.innerHTML=`<span class="ci-face-badge">${fc.toLocaleString()}▲ sel</span>`;
     } else {
       tri.textContent=(m.userData.fc||0).toLocaleString()+'▲';
+    }
+    if(hasGroups){
+      const gc=document.createElement('span');
+      gc.style.cssText='font-family:var(--ff-mono);font-size:9px;color:var(--wand);margin-left:4px;';
+      gc.textContent=`[${groups.length}G]`;
+      tri.appendChild(gc);
     }
 
     d.appendChild(cb); d.appendChild(dot); d.appendChild(nm); d.appendChild(tri);
@@ -2922,8 +3114,106 @@ function buildList(){
     });
 
     list.appendChild(d);
+
+    // ── Group rows (for any committed groups with 5+ triangles) ──
+    if(hasGroups){
+      const palette=['#ff6600','#3b82f6','#22c55e','#f59e0b','#a855f7','#ec4899','#38bdf8','#84cc16'];
+      groups.forEach(g=>{
+        if(g.faces.size<5) return; // only show groups with 5+ triangles
+        const gr=document.createElement('div');
+        gr.className='ci-group-row';
+
+        const swatchColor=palette[(g.id-1)%palette.length];
+        const swatch=document.createElement('span');
+        swatch.style.cssText=`width:8px;height:8px;border-radius:2px;background:${swatchColor};flex-shrink:0;display:inline-block;`;
+
+        const chev=document.createElement('span');
+        chev.className='ci-group-chevron'+(g.collapsed?'':' open');
+        chev.textContent='▶';
+
+        const gname=document.createElement('div'); gname.className='ci-group-name';
+        gname.textContent=g.name;
+
+        const gcnt=document.createElement('div'); gcnt.className='ci-group-count';
+        gcnt.textContent=`${g.faces.size}▲`;
+
+        const acts=document.createElement('div'); acts.className='ci-group-actions';
+
+        // Rename button
+        const renBtn=document.createElement('button'); renBtn.className='ci-group-btn';
+        renBtn.textContent='✎'; renBtn.title='Rename group';
+        renBtn.addEventListener('click',e=>{
+          e.stopPropagation();
+          const newName=prompt('Rename group:',g.name);
+          if(newName!==null){ renameGroup(m,g.id,newName); buildList(); }
+        });
+
+        // Show/hide toggle
+        const visBtn=document.createElement('button'); visBtn.className='ci-group-btn';
+        visBtn.textContent=g.collapsed?'👁':'🚫'; visBtn.title=g.collapsed?'Show group overlay':'Hide group overlay';
+        visBtn.addEventListener('click',e=>{
+          e.stopPropagation();
+          toggleGroupVisibility(m,g.id);
+          buildList();
+        });
+
+        // Select triangles in this group
+        const selBtn=document.createElement('button'); selBtn.className='ci-group-btn';
+        selBtn.textContent='SEL'; selBtn.title='Re-select these triangles';
+        selBtn.addEventListener('click',e=>{
+          e.stopPropagation();
+          clearSel(); clearFaceSel();
+          if(!faceSelections.has(m)) faceSelections.set(m,new Set());
+          g.faces.forEach(f=>faceSelections.get(m).add(f));
+          rebuildOverlay(m);
+          refreshUI();
+        });
+
+        // Delete group
+        const delGBtn=document.createElement('button'); delGBtn.className='ci-group-btn danger';
+        delGBtn.textContent='✕'; delGBtn.title='Delete this group';
+        delGBtn.addEventListener('click',e=>{
+          e.stopPropagation();
+          deleteGroup(m,g.id);
+          buildList();
+        });
+
+        acts.appendChild(renBtn); acts.appendChild(visBtn);
+        acts.appendChild(selBtn); acts.appendChild(delGBtn);
+        gr.appendChild(swatch); gr.appendChild(chev); gr.appendChild(gname);
+        gr.appendChild(gcnt); gr.appendChild(acts);
+
+        // Row click = toggle visibility
+        gr.addEventListener('click',()=>{ toggleGroupVisibility(m,g.id); buildList(); });
+
+        list.appendChild(gr);
+      });
+    }
+
+    // ── Pending face selection row (5+ selected but not yet grouped) ──
+    if(hasFaceSel && faceSelections.get(m).size>=5){
+      const pr=document.createElement('div'); pr.className='ci-group-pending';
+      const pl=document.createElement('div'); pl.className='ci-group-pending-label';
+      pl.textContent=`${faceSelections.get(m).size} tri selected — group to preserve`;
+      pr.appendChild(pl);
+      list.appendChild(pr);
+    }
   });
 }
+
+// Wire the GROUP button in the action bar
+document.getElementById('rp-group-btn').addEventListener('click',()=>{
+  // Commit all current face selections with 5+ triangles as named groups
+  let count=0;
+  for(const [mesh, sel] of faceSelections){
+    if(sel.size>=5){ commitFaceSelectionAsGroup(mesh); count++; }
+  }
+  if(count>0){
+    scene_group_ref=group; // ensure ref is current
+    setStatus(`Created ${count} triangle group${count!==1?'s':''}.`);
+  }
+  refreshUI();
+});
 
 // Sort cycle
 function cycleSortMode(){} // kept for any old references — select now drives sorting
@@ -3966,6 +4256,144 @@ document.addEventListener('mousemove',e=>{
   vcDragLast={x:e.clientX,y:e.clientY};
 });
 document.addEventListener('mouseup',()=>{ vcDragging=false; });
+
+// ══════════════════════════════════════════════
+// FONT MANAGEMENT
+// ══════════════════════════════════════════════
+const FONT_STORAGE_KEY = 'stl_wand_fonts';
+
+// Google Fonts URL builder — maps font names to their Google Fonts API string
+const GFONTS_MAP = {
+  // UI fonts
+  'Inter':         'Inter:wght@400;500;600;700',
+  'IBM Plex Sans': 'IBM+Plex+Sans:wght@400;500;600;700',
+  'Nunito':        'Nunito:wght@400;600;700',
+  'Barlow':        'Barlow:wght@400;500;600;700',
+  'DM Sans':       'DM+Sans:wght@400;500;700',
+  'Outfit':        'Outfit:wght@400;500;600;700',
+  'Noto Sans':     'Noto+Sans:wght@400;500;700',
+  'Rajdhani':      'Rajdhani:wght@400;500;600;700',
+  // Mono fonts
+  'JetBrains Mono':'JetBrains+Mono:wght@400;500;700',
+  'Fira Code':     'Fira+Code:wght@400;500;700',
+  'Source Code Pro':'Source+Code+Pro:wght@400;500;700',
+  'IBM Plex Mono': 'IBM+Plex+Mono:wght@400;500;700',
+  'Inconsolata':   'Inconsolata:wght@400;700',
+  'Roboto Mono':   'Roboto+Mono:wght@400;500;700',
+  'Space Mono':    'Space+Mono:wght@400;700',
+  'Share Tech Mono':'Share+Tech+Mono',
+};
+
+// Which font link elements are already injected (avoid duplicates)
+const _loadedFonts = new Set(['Rajdhani','Share Tech Mono']); // these are in the static <link>
+
+function loadGoogleFont(name){
+  if(_loadedFonts.has(name)) return Promise.resolve();
+  const key = GFONTS_MAP[name];
+  if(!key) return Promise.resolve();
+  return new Promise(resolve=>{
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${key}&display=swap`;
+    link.onload = ()=>{ _loadedFonts.add(name); resolve(); };
+    link.onerror = resolve; // fail gracefully — don't crash
+    document.head.appendChild(link);
+  });
+}
+
+function applyFonts(uiFont, monoFont, basePx){
+  const root = document.documentElement;
+  root.style.setProperty('--ff-ui', `'${uiFont}', sans-serif`);
+  root.style.setProperty('--ff-mono', `'${monoFont}', monospace`);
+
+  // Apply base font size — scale all ff-mono / ff-ui uses proportionally
+  // We do this by setting a CSS variable and using it in a global rule
+  let styleEl = document.getElementById('font-size-override');
+  if(!styleEl){
+    styleEl = document.createElement('style');
+    styleEl.id = 'font-size-override';
+    document.head.appendChild(styleEl);
+  }
+  // Re-scale every element that uses ff-mono from the original 10px base
+  const scale = basePx / 10;
+  styleEl.textContent = `
+    :root { --font-scale: ${scale.toFixed(3)}; }
+    *[style*="font-family:var(--ff-mono)"],
+    .lp-title, .slider-label, .meth-btn, .action-btn, .half-btn,
+    .ci, .ci-tri, .rp-hdr, .rp-sel-btn, .rp-sel-count,
+    .tbtn, .stat-l, .stat-v, .lp-section-body *,
+    .hud-widget, #hints, #status, #s-mode,
+    .wand-tol-row, .contiguous-row label, #metric-desc,
+    .ci-group-name, .ci-group-count, .ci-group-btn
+    { font-size: calc(10px * ${scale.toFixed(3)}) !important; }
+    .tbtn { font-size: calc(12px * ${scale.toFixed(3)}) !important; }
+    .stat-v { font-size: calc(14px * ${scale.toFixed(3)}) !important; }
+    .rp-hdr { font-size: calc(11px * ${scale.toFixed(3)}) !important; }
+    #rp-sort { font-size: calc(11px * ${scale.toFixed(3)}) !important; }
+    .lp-title { font-size: calc(10px * ${scale.toFixed(3)}) !important; }
+  `;
+}
+
+async function applyAndSaveFonts(uiFont, monoFont, basePx){
+  // Load both fonts if not already loaded
+  await Promise.all([loadGoogleFont(uiFont), loadGoogleFont(monoFont)]);
+  applyFonts(uiFont, monoFont, basePx);
+  // Persist to localStorage
+  localStorage.setItem(FONT_STORAGE_KEY, JSON.stringify({uiFont, monoFont, basePx}));
+}
+
+function updateFontPreview(uiFont, monoFont){
+  const fpUI = document.getElementById('fp-ui');
+  const fpMono = document.getElementById('fp-mono');
+  if(fpUI)  fpUI.style.fontFamily  = `'${uiFont}', sans-serif`;
+  if(fpMono) fpMono.style.fontFamily = `'${monoFont}', monospace`;
+}
+
+// Wire font settings UI
+function initFontSettings(){
+  const uiSel   = document.getElementById('opt-ui-font');
+  const monoSel = document.getElementById('opt-mono-font');
+  const szSlider= document.getElementById('opt-font-size');
+  const szLbl   = document.getElementById('opt-font-size-lbl');
+  const applyBtn= document.getElementById('btn-apply-font');
+  if(!uiSel||!monoSel) return;
+
+  // Restore saved settings
+  try{
+    const saved = JSON.parse(localStorage.getItem(FONT_STORAGE_KEY)||'null');
+    if(saved){
+      uiSel.value   = saved.uiFont   || 'Rajdhani';
+      monoSel.value = saved.monoFont || 'Share Tech Mono';
+      szSlider.value= saved.basePx   || 10;
+      szLbl.textContent = (saved.basePx||10)+'px';
+      // Apply saved fonts on load
+      applyAndSaveFonts(saved.uiFont||'Rajdhani', saved.monoFont||'Share Tech Mono', saved.basePx||10);
+    }
+  }catch(e){}
+
+  // Live preview on dropdown change
+  uiSel.addEventListener('change', async ()=>{
+    await loadGoogleFont(uiSel.value);
+    updateFontPreview(uiSel.value, monoSel.value);
+  });
+  monoSel.addEventListener('change', async ()=>{
+    await loadGoogleFont(monoSel.value);
+    updateFontPreview(uiSel.value, monoSel.value);
+  });
+
+  szSlider.addEventListener('input', ()=>{
+    szLbl.textContent = szSlider.value+'px';
+  });
+
+  applyBtn.addEventListener('click', async ()=>{
+    applyBtn.textContent = '⟳ LOADING…';
+    applyBtn.disabled = true;
+    await applyAndSaveFonts(uiSel.value, monoSel.value, +szSlider.value);
+    applyBtn.textContent = '✓ APPLIED';
+    setTimeout(()=>{ applyBtn.textContent='✓ APPLY FONT CHANGES'; applyBtn.disabled=false; }, 1200);
+  });
+}
+initFontSettings();
 
 // ══════════════════════════════════════════════
 // SETTINGS WIRING
