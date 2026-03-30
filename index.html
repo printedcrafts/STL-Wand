@@ -1946,6 +1946,7 @@ const overlayMeshes  = new Map();
 // A "group" is a named, persistent set of 5+ triangles on a single mesh.
 const triGroups = new Map();
 let _groupCounter = 0;
+let scene_group_ref = null; // reference to the current Three.js group for adding overlays
 
 function getGroupsForMesh(mesh){ return triGroups.get(mesh)||[]; }
 
