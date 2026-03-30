@@ -4,9 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STL Wand Editor</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- ── Content Security Policy ─────────────────────────────────────────────
+     script-src: self + cdnjs (Three.js, JSZip) + AI proxy (configurable)
+     style-src:  self + Google Fonts
+     connect-src: self + Anthropic API (direct) + wildcard for custom proxy
+     NOTE: 'unsafe-inline' required for inline <style> blocks.
+           Remove it if all styles are moved to external files.
+     ──────────────────────────────────────────────────────────────────── -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src  'self' https://cdnjs.cloudflare.com 'unsafe-eval';
+  style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src    'self' https://fonts.gstatic.com;
+  img-src     'self' data:;
+  connect-src 'self' https://api.anthropic.com https:;
+  worker-src  'none';
+  object-src  'none';
+  base-uri    'self';
+  form-action 'self';
+">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet" crossorigin="anonymous">
+<!-- SRI hashes: generate with  curl <url> | openssl dgst -sha384 -binary | openssl base64 -A
+     and add  integrity="sha384-<hash>"  to each script tag below. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -1385,7 +1409,7 @@ body.move.dragging #canvas{cursor:grabbing;}
     <div class="ai-footer">
       <button class="ai-apply-all" id="ai-apply-all" style="display:none;">⚡ APPLY TOP RECOMMENDATION</button>
       <button class="ai-close-btn" id="ai-close-btn">CLOSE</button>
-      <button class="ai-close-btn" id="ai-key-btn" title="Set or change your Anthropic API key" onclick="promptForApiKey(false).then(()=>{});" style="border-color:rgba(56,189,248,.3);color:var(--ai);">🔑 API KEY</button>
+      <button class="ai-close-btn" id="ai-key-btn" title="Set or change your AI proxy URL" onclick="promptForApiKey(false).then(()=>{});" style="border-color:rgba(56,189,248,.3);color:var(--ai);">⚙ AI PROXY</button>
     </div>
   </div>
 </div>
@@ -2907,6 +2931,18 @@ async function loadSTL(file){
     loadedFileName=file.name.replace(/\.stl$/i,'').replace(/[^a-zA-Z0-9_\-]/g,'_')||'model';
     document.getElementById('export-prefix').value=loadedFileName;
 
+    // ── Safety limits — prevent browser DoS on huge files ─────────
+    const MAX_FILE_BYTES  = 256 * 1024 * 1024; // 256 MB hard cap
+    const MAX_TRIANGLES   = 3_000_000;          // 3 M triangles hard cap
+    const WARN_TRIANGLES  = 500_000;            // 500 K — warn but proceed
+
+    if(file.size > MAX_FILE_BYTES){
+      throw new Error(
+        `File is ${(file.size/1024/1024).toFixed(1)} MB. ` +
+        `Maximum supported size is ${MAX_FILE_BYTES/1024/1024} MB.`
+      );
+    }
+
     // ── Read & parse ─────────────────────────────────────────────
     msg('READING FILE…'); await tick();
     const buf = await file.arrayBuffer();
@@ -2916,6 +2952,16 @@ async function loadSTL(file){
     const F = rawPos.length/9;
     document.getElementById('sv-tri').textContent=F.toLocaleString();
     if(!F) throw new Error('No triangles found in this file.');
+    if(F > MAX_TRIANGLES){
+      throw new Error(
+        `Model has ${F.toLocaleString()} triangles. ` +
+        `Maximum supported is ${MAX_TRIANGLES.toLocaleString()}. ` +
+        `Please simplify the mesh before loading.`
+      );
+    }
+    if(F > WARN_TRIANGLES){
+      setStatus(`⚠ Large model (${F.toLocaleString()} tri) — segmentation may be slow.`);
+    }
 
     // ── Build scene ──────────────────────────────────────────────
     await buildMeshes(msg, true);
@@ -3909,130 +3955,168 @@ small fragments may appear. Setting Min Triangles to <strong>${minTri}</strong> 
   return recs;
 }
 
-// ── Fetch Claude narrative ─────────────────────────────
-// ══════════════════════════════════════════════
-// ANTHROPIC API KEY MANAGEMENT
-// ══════════════════════════════════════════════
-// Key is stored in localStorage so the user only enters it once.
-// Never sent anywhere except directly to api.anthropic.com.
-const STORAGE_KEY='stl_wand_anthropic_key';
+// ── AI Proxy Configuration ───────────────────────────────────────────────────
+// Requests are routed through a backend proxy. The proxy URL is stored in
+// localStorage. No Anthropic API key is ever stored in or sent from the browser.
+// ── AI Proxy Configuration ───────────────────────────────────────────────────
+// API keys MUST NOT be stored in the browser. Requests go to a proxy endpoint
+// (e.g. a Cloudflare Worker) that holds the key server-side.
+//
+// QUICK SETUP — deploy this Cloudflare Worker:
+//   export default {
+//     async fetch(req) {
+//       if(req.method==='OPTIONS') return new Response(null,{headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*'}});
+//       const body = await req.json();
+//       const r = await fetch('https://api.anthropic.com/v1/messages',{
+//         method:'POST',
+//         headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,
+//                  'anthropic-version':'2023-06-01'},
+//         body:JSON.stringify(body)
+//       });
+//       const data = await r.json();
+//       return new Response(JSON.stringify(data),{headers:{'Access-Control-Allow-Origin':'*','Content-Type':'application/json'}});
+//     }
+//   }
+//   Set ANTHROPIC_API_KEY as a Cloudflare secret (wrangler secret put ANTHROPIC_API_KEY).
+//   Then paste the Worker URL into the AI proxy settings below.
+// ─────────────────────────────────────────────────────────────────────────────
+const PROXY_STORAGE_KEY='stl_wand_ai_proxy_url';
 
-function getStoredApiKey(){ return localStorage.getItem(STORAGE_KEY)||''; }
-function setStoredApiKey(k){ if(k) localStorage.setItem(STORAGE_KEY,k); else localStorage.removeItem(STORAGE_KEY); }
+function getProxyUrl(){ return localStorage.getItem(PROXY_STORAGE_KEY)||''; }
+function setProxyUrl(u){ if(u) localStorage.setItem(PROXY_STORAGE_KEY,u.trim()); else localStorage.removeItem(PROXY_STORAGE_KEY); }
 
-// Prompt the user for their API key — returns the key string or null if cancelled
+// Build UI prompt for the proxy URL — called when no proxy is configured
+function buildProxyPromptOverlay(){
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;display:flex;align-items:center;justify-content:center;';
+
+  const box=document.createElement('div');
+  box.style.cssText='background:#08080f;border:1px solid var(--ai);width:460px;padding:24px;font-family:var(--ff-mono);';
+
+  const title=document.createElement('div');
+  title.style.cssText='font-size:13px;color:var(--ai);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;';
+  title.textContent='◈ AI Proxy URL';
+
+  const desc=document.createElement('div');
+  desc.style.cssText='font-size:10px;color:var(--text-label);line-height:1.7;margin-bottom:14px;';
+  desc.textContent='The AI Advisor routes requests through a backend proxy that holds your Anthropic API key server-side. API keys must never be stored in the browser.';
+
+  const howTo=document.createElement('div');
+  howTo.style.cssText='font-size:10px;color:var(--text-dim);line-height:1.6;margin-bottom:12px;background:rgba(74,248,255,.04);padding:8px 10px;border-left:2px solid var(--ai);';
+  howTo.textContent='Deploy the provided Cloudflare Worker (see project README) and paste its URL below. The worker adds your API key server-side and forwards requests to Anthropic.';
+
+  const inp=document.createElement('input');
+  inp.type='url';
+  inp.placeholder='https://your-worker.your-name.workers.dev';
+  inp.value=getProxyUrl();
+  inp.style.cssText='width:100%;height:36px;background:rgba(255,255,255,.05);border:1px solid var(--border-hi);color:var(--text-hi);font-family:var(--ff-mono);font-size:11px;padding:0 10px;outline:none;margin-bottom:10px;box-sizing:border-box;';
+
+  const status=document.createElement('div');
+  status.style.cssText='font-size:9px;color:var(--text-dim);margin-bottom:8px;min-height:14px;';
+
+  const btnRow=document.createElement('div');
+  btnRow.style.cssText='display:flex;gap:8px;';
+
+  const saveBtn=document.createElement('button');
+  saveBtn.style.cssText='flex:1;height:32px;background:rgba(56,189,248,.12);border:1px solid var(--ai);color:var(--ai);font-family:var(--ff-mono);font-size:10px;letter-spacing:.08em;cursor:pointer;';
+  saveBtn.textContent='SAVE & CONTINUE';
+
+  const skipBtn=document.createElement('button');
+  skipBtn.style.cssText='height:32px;padding:0 14px;background:transparent;border:1px solid var(--border-hi);color:var(--text-dim);font-family:var(--ff-mono);font-size:10px;cursor:pointer;';
+  skipBtn.textContent='SKIP';
+
+  const cancelBtn=document.createElement('button');
+  cancelBtn.style.cssText='height:32px;padding:0 14px;background:transparent;border:1px solid var(--border-hi);color:var(--text-dim);font-family:var(--ff-mono);font-size:10px;cursor:pointer;';
+  cancelBtn.textContent='CANCEL';
+
+  btnRow.appendChild(saveBtn);
+  btnRow.appendChild(skipBtn);
+  btnRow.appendChild(cancelBtn);
+  box.appendChild(title);
+  box.appendChild(desc);
+  box.appendChild(howTo);
+  box.appendChild(inp);
+  box.appendChild(status);
+  box.appendChild(btnRow);
+  overlay.appendChild(box);
+  return {overlay,inp,status,saveBtn,skipBtn,cancelBtn};
+}
+
 async function promptForApiKey(required=false){
   return new Promise(resolve=>{
-    const overlay=document.createElement('div');
-    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;display:flex;align-items:center;justify-content:center;';
-    overlay.innerHTML=`
-      <div style="background:#08080f;border:1px solid var(--ai);width:420px;padding:24px;position:relative;font-family:var(--ff-mono);">
-        <div style="font-size:13px;color:var(--ai);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;">◈ Anthropic API Key</div>
-        <div style="font-size:10px;color:var(--text-label);line-height:1.7;margin-bottom:14px;">
-          The AI Advisor sends geometry data to <strong style="color:var(--text-hi)">api.anthropic.com</strong> to generate a plain-language analysis of your model.<br><br>
-          Your key is stored <strong style="color:var(--text-hi)">only in your browser</strong> (localStorage) and is never sent anywhere except directly to Anthropic's API.<br><br>
-          Get a free key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--ai);">console.anthropic.com</a>
-        </div>
-        <input id="api-key-input" type="password"
-          placeholder="sk-ant-api03-…"
-          style="width:100%;height:36px;background:rgba(255,255,255,.05);border:1px solid var(--border-hi);
-                 color:var(--text-hi);font-family:var(--ff-mono);font-size:11px;padding:0 10px;
-                 outline:none;margin-bottom:10px;box-sizing:border-box;"
-          value="${getStoredApiKey()}">
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <button id="api-key-save" style="flex:1;height:32px;background:rgba(56,189,248,.12);border:1px solid var(--ai);
-                  color:var(--ai);font-family:var(--ff-mono);font-size:10px;letter-spacing:.08em;cursor:pointer;">
-            SAVE &amp; CONTINUE
-          </button>
-          ${!required?`<button id="api-key-skip" style="height:32px;padding:0 14px;background:transparent;border:1px solid var(--border-hi);
-                  color:var(--text-dim);font-family:var(--ff-mono);font-size:10px;cursor:pointer;">SKIP</button>`:''}
-          <button id="api-key-cancel" style="height:32px;padding:0 14px;background:transparent;border:1px solid var(--border-hi);
-                  color:var(--text-dim);font-family:var(--ff-mono);font-size:10px;cursor:pointer;">CANCEL</button>
-        </div>
-        <div id="api-key-status" style="font-size:9px;color:var(--text-dim);"></div>
-        <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:9px;color:var(--text-dim);cursor:pointer;">
-          <input type="checkbox" id="api-key-show" style="accent-color:var(--ai);cursor:pointer;">
-          Show key
-        </label>
-      </div>`;
+    const {overlay,inp,status,saveBtn,skipBtn,cancelBtn}=buildProxyPromptOverlay();
     document.body.appendChild(overlay);
-
-    const inp=overlay.querySelector('#api-key-input');
-    const status=overlay.querySelector('#api-key-status');
     inp.focus();
-
-    overlay.querySelector('#api-key-show').addEventListener('change',function(){
-      inp.type=this.checked?'text':'password';
-    });
-    overlay.querySelector('#api-key-save').addEventListener('click',()=>{
-      const k=inp.value.trim();
-      if(!k){ status.textContent='Please enter a key.'; status.style.color='var(--danger)'; return; }
-      if(!k.startsWith('sk-')){ status.textContent='Key should start with sk-…'; status.style.color='var(--warn)'; }
-      setStoredApiKey(k);
+    saveBtn.addEventListener('click',()=>{
+      const u=inp.value.trim();
+      if(!u){ status.textContent='Please enter a proxy URL.'; status.style.color='var(--danger)'; return; }
+      try{ new URL(u); } catch(e){ status.textContent='Invalid URL format.'; status.style.color='var(--danger)'; return; }
+      setProxyUrl(u);
       document.body.removeChild(overlay);
-      resolve(k);
+      resolve(u);
     });
-    const skipBtn=overlay.querySelector('#api-key-skip');
-    if(skipBtn) skipBtn.addEventListener('click',()=>{ document.body.removeChild(overlay); resolve(null); });
-    overlay.querySelector('#api-key-cancel').addEventListener('click',()=>{ document.body.removeChild(overlay); resolve(false); });
-    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') overlay.querySelector('#api-key-save').click(); });
+    skipBtn.addEventListener('click',()=>{ document.body.removeChild(overlay); resolve(null); });
+    cancelBtn.addEventListener('click',()=>{ document.body.removeChild(overlay); resolve(false); });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') saveBtn.click(); });
   });
 }
 
 async function fetchAINarrative(a,recs){
-  // Get stored key; if none, prompt the user
-  let key=getStoredApiKey();
-  if(!key){
-    key=await promptForApiKey(false);
-    if(!key) return null; // user cancelled or skipped
+  // Get configured proxy URL; if none, prompt the user to set one
+  let proxyUrl=getProxyUrl();
+  if(!proxyUrl){
+    proxyUrl=await promptForApiKey(false); // reuses the proxy-URL prompt
+    if(!proxyUrl) return null; // user cancelled or skipped
   }
 
-  const prompt=`You are an expert 3D model analyst. A user has loaded an STL file named "${a.fileName}" with these geometry stats:
-- Total triangles: ${a.F.toLocaleString()}
-- Disconnected bodies (CONNECT mode): ${a.connParts}
-- Model dimensions: ${a.size.x} × ${a.size.y} × ${a.size.z} units
-- Aspect ratio: ${a.aspectRatio.toFixed(1)}:1
-- Unique normal directions: ${a.uniqueNormals.toLocaleString()}
-- Mostly flat-faced geometry: ${a.isMostlyFlat}
-- Sharp edges at 15°: ${(a.sharpAt15*100).toFixed(1)}%
-- Sharp edges at 30°: ${(a.sharpAt30*100).toFixed(1)}%
-- Sharp edges at 45°: ${(a.sharpAt45*100).toFixed(1)}%
-- Triangle size variation (CV): ${a.areaCV.toFixed(2)}
-- Recommended segmentation: ${a.suggestedMode==='conn'?'CONNECT mode':'ANGLE mode at '+a.suggestedAngle+'°'}
-- Expected parts after segmentation: ~${a.expectedParts||a.connParts}
-
-Write 2-3 SHORT sentences (max 60 words total) that:
-1. Characterize what type of model this likely is (mechanical part, organic shape, architectural, etc.)
-2. Explain in plain language WHY the recommended approach will work well
-3. Note one practical tip for using the wand tool on this type of geometry
-
-Be direct, technical but friendly. No preamble, no "Based on the analysis". Start immediately with your assessment.`;
+  // Geometry stats only — no PII, no file content sent to proxy
+  const payload={
+    model:'claude-sonnet-4-20250514',
+    max_tokens:200,
+    messages:[{role:'user',content:
+      `You are an expert 3D model analyst. A user has loaded an STL file with these geometry stats:\n` +
+      `- Total triangles: ${a.F.toLocaleString()}\n` +
+      `- Disconnected bodies (CONNECT mode): ${a.connParts}\n` +
+      `- Model dimensions: ${a.size.x} × ${a.size.y} × ${a.size.z} units\n` +
+      `- Aspect ratio: ${a.aspectRatio.toFixed(1)}:1\n` +
+      `- Unique normal directions: ${a.uniqueNormals.toLocaleString()}\n` +
+      `- Mostly flat-faced geometry: ${a.isMostlyFlat}\n` +
+      `- Sharp edges at 15°: ${(a.sharpAt15*100).toFixed(1)}%\n` +
+      `- Sharp edges at 30°: ${(a.sharpAt30*100).toFixed(1)}%\n` +
+      `- Sharp edges at 45°: ${(a.sharpAt45*100).toFixed(1)}%\n` +
+      `- Triangle size variation (CV): ${a.areaCV.toFixed(2)}\n` +
+      `- Recommended segmentation: ${a.suggestedMode==='conn'?'CONNECT mode':'ANGLE mode at '+a.suggestedAngle+'°'}\n` +
+      `- Expected parts after segmentation: ~${a.expectedParts||a.connParts}\n\n` +
+      `Write 2-3 SHORT sentences (max 60 words total) that:\n` +
+      `1. Characterize what type of model this likely is\n` +
+      `2. Explain WHY the recommended approach will work well\n` +
+      `3. Note one practical tip for the wand tool on this geometry\n\n` +
+      `Be direct and technical but friendly. No preamble. Start immediately with your assessment.`
+    }]
+  };
 
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    // ── All requests go to the configured backend proxy, never directly to Anthropic ──
+    // The proxy adds the API key server-side. No key is ever stored in or sent from the browser.
+    const resp=await fetch(proxyUrl,{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': key,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:200,
-        messages:[{role:'user',content:prompt}]
-      })
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
     });
-    if(resp.status===401){
-      // Key rejected — clear it and tell the user
-      setStoredApiKey('');
+    if(resp.status===401||resp.status===403){
+      // Proxy rejected — clear URL so user is prompted to reconfigure
+      setProxyUrl('');
       return '__KEY_INVALID__';
     }
+    if(!resp.ok){ return null; }
     const data=await resp.json();
     if(data.error){ return null; }
     const textBlock=data.content?.find(b=>b.type==='text');
     return textBlock?.text||null;
-  }catch(e){ return null; }
+  }catch(e){
+    console.warn('AI proxy request failed:',e.message);
+    return null;
+  }
 }
 
 // ── Render the advisor UI ──────────────────────────────
@@ -4103,12 +4187,30 @@ async function openAIAdvisor(){
     const nb=document.getElementById('ai-narrative-block');
     if(!nb||!modal.classList.contains('on')) return;
     const textEl=nb.querySelector('.ai-narrative-text');
+    // ── Safe DOM rendering — no innerHTML from AI output ──────────
+    textEl.textContent=''; // clear "Generating..." spinner
     if(text==='__KEY_INVALID__'){
-      textEl.innerHTML=`<span style="color:var(--danger);">⚠ API key rejected by Anthropic.</span> <button onclick="promptForApiKey(true).then(k=>k&&openAIAdvisor())" style="background:transparent;border:1px solid var(--ai);color:var(--ai);font-family:var(--ff-mono);font-size:10px;padding:2px 8px;cursor:pointer;margin-left:8px;">UPDATE KEY</button>`;
+      const warn=document.createElement('span');
+      warn.style.color='var(--danger)';
+      warn.textContent='⚠ Proxy returned 401/403 — check proxy configuration.';
+      const btn=document.createElement('button');
+      btn.style.cssText='background:transparent;border:1px solid var(--ai);color:var(--ai);font-family:var(--ff-mono);font-size:10px;padding:2px 8px;cursor:pointer;margin-left:8px;';
+      btn.textContent='RECONFIGURE PROXY';
+      btn.addEventListener('click',()=>promptForApiKey(true).then(u=>u&&openAIAdvisor()));
+      textEl.appendChild(warn);
+      textEl.appendChild(btn);
+    } else if(text){
+      // Render AI text as plain text — no HTML interpretation of model output
+      textEl.textContent=text;
     } else {
-      textEl.innerHTML=text
-        ? text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-        : `This model has <strong>${a.F.toLocaleString()} triangles</strong> across <strong>${a.connParts} ${a.connParts>1?'disconnected bodies':'connected body'}</strong>. ${a.isMostlyFlat?'The flat-faced geometry suggests a mechanical or CAD part — use the ANGLE mode at low thresholds to split cleanly along edges.':'The curved surface normals suggest an organic or sculpted shape — use moderate angle thresholds and explode view to reach inner areas.'}`;
+      // Fallback summary using only safe text values
+      const bodyText=
+        `This model has ${a.F.toLocaleString()} triangles across ` +
+        `${a.connParts} ${a.connParts>1?'disconnected bodies':'connected body'}. ` +
+        (a.isMostlyFlat
+          ? 'The flat-faced geometry suggests a mechanical or CAD part — use ANGLE mode at low thresholds.'
+          : 'The curved surface normals suggest an organic shape — use moderate angle thresholds and explode view.');
+      textEl.textContent=bodyText;
     }
   });
 }
