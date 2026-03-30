@@ -989,6 +989,24 @@ body.move.dragging #canvas{cursor:grabbing;}
         <button class="half-btn" id="btn-explode-full"  disabled style="border-color:#1a4a38;color:var(--explode);">FULL</button>
         <button class="half-btn" id="btn-explode-reset" disabled style="border-color:#1a3020;color:#6ee7b7;">RESET</button>
       </div>
+
+      <!-- Triangle Explode -->
+      <div class="orient-divider" style="margin:10px 0 8px;"></div>
+      <div class="slider-label" style="margin-bottom:4px;">
+        <span style="color:var(--wand);">TRIANGLE EXPLODE</span>
+        <strong id="lbl-tri-explode" style="color:var(--wand);">0%</strong>
+      </div>
+      <div style="font-family:var(--ff-mono);font-size:9px;color:var(--text-dim);line-height:1.5;margin-bottom:6px;">
+        Explodes selected triangles outward from their shared center. Select triangles with the Wand first.
+      </div>
+      <input type="range" class="wand-sl" id="sl-tri-explode" min="0" max="100" value="0" step="1" disabled
+        style="width:100%;margin-bottom:6px;">
+      <div class="btn-row">
+        <button class="half-btn" id="btn-tri-explode-apply" disabled
+          style="border-color:rgba(192,132,252,.4);color:var(--wand);">⚡ EXPLODE SEL</button>
+        <button class="half-btn" id="btn-tri-explode-reset" disabled
+          style="border-color:rgba(192,132,252,.2);color:var(--text-dim);">RESET</button>
+      </div>
     </div>
 
     <!-- Export -->
@@ -1584,6 +1602,12 @@ let mDown=false,mBtn=-1,mLast={x:0,y:0},dragDist=0;
 let toolMode='orbit',boxStart=null;
 let wandPainting=false;  // true while Shift+LMB dragging in wand mode (paint triangles)
 let explodeAmount=0,explodeOffsets=[],explodeScale=1;
+
+// ── Triangle-level explode state ──────────────────────────────────────────────
+// triExplodeSubmeshes: Map<Mesh, {submesh:THREE.Mesh, faces:Set, offsets:Vector3[]}>
+// Each entry holds the extracted floating submesh + per-face radial offsets
+const triExplodeSubmeshes = new Map();
+let triExplodeAmount = 0; // 0..1
 let loadedFileName='model';
 // Orient state
 let orientTarget='model'; // 'model' | 'sel'
@@ -2725,6 +2749,134 @@ function applyExplode(t){
   sl.style.background=`linear-gradient(to right,var(--explode) ${pct}%,var(--border-hi) ${pct}%)`;
 }
 
+// ── Triangle Explode ─────────────────────────────────────────────────────────
+function buildTriExplodeFromSelection(){
+  resetTriExplode();
+  if(!faceSelections.size) return false;
+
+  faceSelections.forEach((selFaces, mesh)=>{
+    if(!selFaces.size) return;
+    const pos = mesh.geometry.attributes.position.array;
+
+    // Centroid of all selected face centroids = explode origin
+    let cx=0,cy=0,cz=0;
+    for(const f of selFaces){
+      const b=f*9;
+      cx+=(pos[b]+pos[b+3]+pos[b+6])/3;
+      cy+=(pos[b+1]+pos[b+4]+pos[b+7])/3;
+      cz+=(pos[b+2]+pos[b+5]+pos[b+8])/3;
+    }
+    cx/=selFaces.size; cy/=selFaces.size; cz/=selFaces.size;
+    const origin = new THREE.Vector3(cx,cy,cz);
+
+    // Scale = bounding spread of selected face centroids
+    let maxDist=0;
+    for(const f of selFaces){
+      const b=f*9;
+      const d=new THREE.Vector3(
+        (pos[b]+pos[b+3]+pos[b+6])/3,
+        (pos[b+1]+pos[b+4]+pos[b+7])/3,
+        (pos[b+2]+pos[b+5]+pos[b+8])/3
+      ).distanceTo(origin);
+      if(d>maxDist) maxDist=d;
+    }
+    const scale = Math.max(maxDist*3, 2);
+
+    // Per-face radial direction
+    const facesArr = [...selFaces];
+    const offsets = facesArr.map(f=>{
+      const b=f*9;
+      const dir = new THREE.Vector3(
+        (pos[b]+pos[b+3]+pos[b+6])/3 - origin.x,
+        (pos[b+1]+pos[b+4]+pos[b+7])/3 - origin.y,
+        (pos[b+2]+pos[b+5]+pos[b+8])/3 - origin.z
+      );
+      const len=dir.length();
+      return len<1e-6 ? new THREE.Vector3(0,1,0) : dir.normalize();
+    });
+
+    // Build submesh from selected tris (using base positions, offset applied dynamically)
+    const origPositions = new Float32Array(facesArr.length*9);
+    for(let fi=0;fi<facesArr.length;fi++){
+      const f=facesArr[fi]; const b=f*9;
+      for(let v=0;v<9;v++) origPositions[fi*9+v]=pos[b+v];
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(origPositions.slice(),3));
+    geo.userData.origPositions = origPositions; // keep base copy
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({
+      color:0x9b72f8, roughness:0.35, metalness:0.05,
+      side:THREE.DoubleSide,
+      polygonOffset:true, polygonOffsetFactor:-5, polygonOffsetUnits:-5,
+      transparent:true, opacity:0.95
+    });
+    const submesh = new THREE.Mesh(geo, mat);
+    submesh.position.copy(mesh.position);
+    submesh.rotation.copy(mesh.rotation);
+    submesh.userData.isTriExplode = true;
+    group.add(submesh);
+
+    // Ghost the source mesh
+    const origMat = mesh.userData.mat || mesh.material;
+    const ghostMat = origMat.clone();
+    ghostMat.transparent = true;
+    ghostMat.opacity = 0.18;
+    mesh.userData._preExplodeMat = mesh.material;
+    mesh.material = ghostMat;
+
+    triExplodeSubmeshes.set(mesh, { submesh, facesArr, offsets, scale });
+  });
+
+  return triExplodeSubmeshes.size > 0;
+}
+
+function applyTriExplode(t){
+  triExplodeSubmeshes.forEach(({submesh, facesArr, offsets, scale}, mesh)=>{
+    const orig = submesh.geometry.userData.origPositions;
+    const cur  = submesh.geometry.attributes.position.array;
+    for(let fi=0;fi<facesArr.length;fi++){
+      const dx=offsets[fi].x*t*scale;
+      const dy=offsets[fi].y*t*scale;
+      const dz=offsets[fi].z*t*scale;
+      const base=fi*9;
+      for(let v=0;v<3;v++){
+        cur[base+v*3  ]=orig[base+v*3  ]+dx;
+        cur[base+v*3+1]=orig[base+v*3+1]+dy;
+        cur[base+v*3+2]=orig[base+v*3+2]+dz;
+      }
+    }
+    submesh.geometry.attributes.position.needsUpdate=true;
+    submesh.geometry.computeVertexNormals();
+  });
+}
+
+function resetTriExplode(){
+  triExplodeSubmeshes.forEach(({submesh}, mesh)=>{
+    if(submesh.parent) submesh.parent.remove(submesh);
+    submesh.geometry.dispose();
+    if(submesh.material) submesh.material.dispose();
+    if(mesh.userData._preExplodeMat){
+      if(mesh.material!==mesh.userData._preExplodeMat) mesh.material.dispose();
+      mesh.material = mesh.userData._preExplodeMat;
+      delete mesh.userData._preExplodeMat;
+    }
+  });
+  triExplodeSubmeshes.clear();
+  triExplodeAmount = 0;
+  const sl=document.getElementById('sl-tri-explode');
+  const lbl=document.getElementById('lbl-tri-explode');
+  if(sl){ sl.value=0; sl.style.background='linear-gradient(to right,var(--wand) 0%,var(--border-hi) 0%)'; }
+  if(lbl) lbl.textContent='0%';
+  // Re-enable apply button if there are still face selections
+  const applyBtn=document.getElementById('btn-tri-explode-apply');
+  if(applyBtn) applyBtn.disabled=!faceSelections.size;
+  const resetBtn=document.getElementById('btn-tri-explode-reset');
+  if(resetBtn) resetBtn.disabled=true;
+  const slEl=document.getElementById('sl-tri-explode');
+  if(slEl) slEl.disabled=true;
+}
+
 // ══════════════════════════════════════════════
 // LOAD / BUILD
 // ══════════════════════════════════════════════
@@ -2740,6 +2892,7 @@ async function loadSTL(file){
     meshes=[];selSet.clear();hiddenSet.clear();hovMesh=null;undoStk=[];
     rawPos=null;rawNrm=null;
     explodeAmount=0;explodeOffsets=[];
+    resetTriExplode();
     orientAngles={x:0,y:0,z:0};orientBaked=false;
     moveOffset.set(0,0,0);
     listSort='index';
@@ -2979,6 +3132,9 @@ function refreshUI(){
   document.getElementById('btn-isolate').disabled=sc===0||!has;
   const applyColorBtn=document.getElementById('btn-apply-tri-color');
   if(applyColorBtn) applyColorBtn.disabled=!hasFaceSel;
+  // Triangle explode apply button — enabled when faces selected AND no explode active
+  const triExpApply=document.getElementById('btn-tri-explode-apply');
+  if(triExpApply) triExpApply.disabled=!hasFaceSel||triExplodeSubmeshes.size>0;
   document.getElementById('btn-export').disabled=!has;
   document.getElementById('btn-export-all').disabled=!has;
   document.getElementById('btn-export-sel').disabled=sc===0;
@@ -3439,6 +3595,35 @@ document.getElementById('btn-explode-reset').onclick=()=>{
   sl.style.background='linear-gradient(to right,var(--explode) 0%,var(--border-hi) 0%)';
   applyExplode(0);document.getElementById('explode-badge').classList.remove('on');
 };
+
+// ── Triangle Explode controls ──
+document.getElementById('sl-tri-explode').addEventListener('input',function(){
+  triExplodeAmount=+this.value/100;
+  document.getElementById('lbl-tri-explode').textContent=this.value+'%';
+  const pct=this.value;
+  this.style.background=`linear-gradient(to right,var(--wand) ${pct}%,var(--border-hi) ${pct}%)`;
+  applyTriExplode(triExplodeAmount);
+});
+document.getElementById('btn-tri-explode-apply').addEventListener('click',()=>{
+  const built = buildTriExplodeFromSelection();
+  if(!built) return;
+  // Enable slider and reset, set to 50% as a starting preview
+  const sl=document.getElementById('sl-tri-explode');
+  sl.disabled=false;
+  sl.value=50;
+  document.getElementById('lbl-tri-explode').textContent='50%';
+  sl.style.background='linear-gradient(to right,var(--wand) 50%,var(--border-hi) 50%)';
+  document.getElementById('btn-tri-explode-reset').disabled=false;
+  document.getElementById('btn-tri-explode-apply').disabled=true;
+  triExplodeAmount=0.5;
+  applyTriExplode(0.5);
+  setStatus(`Triangle explode active — ${triExplodeSubmeshes.size} mesh(es) split.`);
+});
+document.getElementById('btn-tri-explode-reset').addEventListener('click',()=>{
+  resetTriExplode();
+  setStatus('Triangle explode reset.');
+  refreshUI();
+});
 
 // Seg
 document.getElementById('btn-panel').onclick=()=>{
