@@ -4620,6 +4620,9 @@ document.getElementById('settings-modal').addEventListener('click',e=>{
     sec.appendChild(header);
     sec.appendChild(body);
 
+    // Start collapsed by default
+    sec.classList.add('collapsed-sec');
+
     // Collapse toggle
     header.addEventListener('click',e=>{
       if(e.target===dragHandle||e.target.closest('.lp-drag-handle')) return;
@@ -4845,12 +4848,11 @@ function closeGuardModal(){
 // STAY button — dismiss modal, do nothing
 document.getElementById('guard-stay').addEventListener('click', closeGuardModal);
 
-// RELOAD button — confirm, then execute pending action
+// RELOAD button — save pending action BEFORE closeGuardModal nulls it
 document.getElementById('guard-reload').addEventListener('click', ()=>{
+  const action = _pendingAction; // capture before closeGuardModal clears it
   closeGuardModal();
-  if(typeof _pendingAction === 'function'){
-    _pendingAction();
-  }
+  if(typeof action === 'function') action();
 });
 
 // Close on backdrop click
