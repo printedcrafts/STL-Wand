@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STL Wand Editor</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -22,7 +22,7 @@
   --move:#fb923c;--move-glow:rgba(251,146,60,.12);
   --ai:#38bdf8;--ai-glow:rgba(56,189,248,.12);--ai-dark:#0c1a24;
   --text:#b8c0dc;--text-dim:#7880a8;--text-hi:#e8eeff;--text-label:#9aa0c0;
-  --ff-ui:'Rajdhani',sans-serif;--ff-mono:'Share Tech Mono',monospace;
+  --ff-ui:'DM Sans',sans-serif;--ff-mono:'JetBrains Mono',monospace;
   --lpw:258px;
 }
 body{background:var(--bg);color:var(--text);font-family:var(--ff-ui);overflow:hidden;height:100vh;}
@@ -1270,7 +1270,8 @@ body.move.dragging #canvas{cursor:grabbing;}
             border:1px solid var(--border-hi);color:var(--text-hi);
             font-family:var(--ff-mono);font-size:10px;padding:0 8px;
             outline:none;cursor:pointer;appearance:auto;">
-            <option value="Rajdhani">Rajdhani (default — compact, technical)</option>
+            <option value="Rajdhani">Rajdhani — compact, technical</option>
+            <option value="DM Sans" selected>DM Sans — geometric, legible ✓ default</option>
             <option value="Inter">Inter — clean, highly readable</option>
             <option value="IBM Plex Sans">IBM Plex Sans — professional, neutral</option>
             <option value="Nunito">Nunito — rounded, friendly</option>
@@ -1289,7 +1290,8 @@ body.move.dragging #canvas{cursor:grabbing;}
             border:1px solid var(--border-hi);color:var(--text-hi);
             font-family:var(--ff-mono);font-size:10px;padding:0 8px;
             outline:none;cursor:pointer;appearance:auto;">
-            <option value="Share Tech Mono">Share Tech Mono (default — techy)</option>
+            <option value="Share Tech Mono">Share Tech Mono — techy</option>
+            <option value="JetBrains Mono" selected>JetBrains Mono — developer favourite ✓ default</option>
             <option value="JetBrains Mono">JetBrains Mono — developer favourite</option>
             <option value="Fira Code">Fira Code — ligatures, highly readable</option>
             <option value="Source Code Pro">Source Code Pro — classic, clean</option>
@@ -1304,9 +1306,9 @@ body.move.dragging #canvas{cursor:grabbing;}
         <div class="settings-row" style="margin-top:10px;">
           <span class="settings-label">BASE FONT SIZE</span>
           <div style="display:flex;align-items:center;gap:8px;">
-            <input type="range" id="opt-font-size" min="9" max="14" value="10" step="1"
+            <input type="range" id="opt-font-size" min="9" max="14" value="12" step="1"
               style="width:90px;height:3px;-webkit-appearance:none;appearance:none;background:var(--border-hi);border-radius:2px;cursor:pointer;">
-            <span id="opt-font-size-lbl" style="font-family:var(--ff-mono);font-size:10px;color:var(--text-hi);min-width:28px;">10px</span>
+            <span id="opt-font-size-lbl" style="font-family:var(--ff-mono);font-size:10px;color:var(--text-hi);min-width:28px;">12px</span>
           </div>
         </div>
 
@@ -4308,7 +4310,7 @@ const GFONTS_MAP = {
 };
 
 // Which font link elements are already injected (avoid duplicates)
-const _loadedFonts = new Set(['Rajdhani','Share Tech Mono']); // these are in the static <link>
+const _loadedFonts = new Set(['DM Sans','JetBrains Mono']); // these are in the static <link>
 
 function loadGoogleFont(name){
   if(_loadedFonts.has(name)) return Promise.resolve();
@@ -4381,18 +4383,27 @@ function initFontSettings(){
   const applyBtn= document.getElementById('btn-apply-font');
   if(!uiSel||!monoSel) return;
 
-  // Restore saved settings
+  // Restore saved settings — or apply new defaults on first visit
   try{
     const saved = JSON.parse(localStorage.getItem(FONT_STORAGE_KEY)||'null');
     if(saved){
-      uiSel.value   = saved.uiFont   || 'Rajdhani';
-      monoSel.value = saved.monoFont || 'Share Tech Mono';
-      szSlider.value= saved.basePx   || 10;
-      szLbl.textContent = (saved.basePx||10)+'px';
-      // Apply saved fonts on load
-      applyAndSaveFonts(saved.uiFont||'Rajdhani', saved.monoFont||'Share Tech Mono', saved.basePx||10);
+      uiSel.value   = saved.uiFont   || 'DM Sans';
+      monoSel.value = saved.monoFont || 'JetBrains Mono';
+      szSlider.value= saved.basePx   || 12;
+      szLbl.textContent = (saved.basePx||12)+'px';
+      applyAndSaveFonts(saved.uiFont||'DM Sans', saved.monoFont||'JetBrains Mono', saved.basePx||12);
+    } else {
+      // First visit — apply and save the new defaults
+      uiSel.value   = 'DM Sans';
+      monoSel.value = 'JetBrains Mono';
+      szSlider.value= 12;
+      szLbl.textContent = '12px';
+      applyAndSaveFonts('DM Sans', 'JetBrains Mono', 12);
     }
-  }catch(e){}
+  }catch(e){
+    // Fallback if localStorage is blocked
+    applyAndSaveFonts('DM Sans', 'JetBrains Mono', 12);
+  }
 
   // Live preview on dropdown change
   uiSel.addEventListener('change', async ()=>{
@@ -4433,7 +4444,17 @@ document.getElementById('settings-modal').addEventListener('click',e=>{
 // ══════════════════════════════════════════════
 (function initPanelSections(){
   const panel=document.getElementById('lpanel');
-  let locked=false;
+  let locked=true;
+
+  // Apply locked state immediately on init
+  panel.classList.add('layout-locked');
+  document.getElementById('lp-lock-label').textContent='LAYOUT LOCKED — drag disabled';
+  document.getElementById('lock-icon-open').style.display='none';
+  document.getElementById('lock-icon-closed').style.display='';
+  // Fix button text node (last child)
+  const lockBtnEl=document.getElementById('btn-lp-lock');
+  lockBtnEl.childNodes[lockBtnEl.childNodes.length-1].textContent=' UNLOCK LAYOUT';
+  panel.querySelectorAll('.lp-section').forEach(s=>s.setAttribute('draggable','false'));
 
   // Lock/unlock toggle
   document.getElementById('btn-lp-lock').addEventListener('click',()=>{
