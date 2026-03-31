@@ -51,68 +51,95 @@
 }
 
 /* ── LIGHT THEME ─────────────────────────────────────────────────── */
+/* ── LIGHT THEME: Graphite Mist (Palette D) ────────────────────── */
 [data-theme="light"]{
-  --bg:#EDF2F4;--panel:#ffffff;
-  --border:#d0d5e8;--border-hi:#a8b0cc;
-  --accent:#0066cc;--accent-glow:rgba(0,102,204,.10);
-  --sel:#e05500;--hov:#007755;--danger:#cc1133;--warn:#996600;
-  --export:#6d28d9;--export-glow:rgba(109,40,217,.10);
-  --explode:#047857;--explode-glow:rgba(4,120,87,.08);
-  --orient:#be185d;--orient-glow:rgba(190,24,93,.08);
-  --ax-x:#cc3333;--ax-y:#226633;--ax-z:#2255aa;
+  --bg:#ecedef;--panel:#f7f8f9;
+  --border:#c8cacc;--border-hi:#a4a8ae;
+  --accent:#4338ca;--accent-glow:rgba(67,56,202,.10);
+  --sel:#c2410c;--hov:#065f46;--danger:#b91c1c;--warn:#854d0e;
+  --export:#5b21b6;--export-glow:rgba(91,33,182,.10);
+  --explode:#065f46;--explode-glow:rgba(6,95,70,.08);
+  --orient:#9d174d;--orient-glow:rgba(157,23,77,.08);
+  --ax-x:#b91c1c;--ax-y:#166534;--ax-z:#1e40af;
   --wand:#7e22ce;--wand-glow:rgba(126,34,206,.10);
-  --move:#c2410c;--move-glow:rgba(194,65,12,.10);
+  --move:#9a3412;--move-glow:rgba(154,52,18,.10);
   --ai:#0369a1;--ai-glow:rgba(3,105,161,.10);--ai-dark:#e0f2fe;
-  --text:#30d6ff;--text-dim:#6872a0;--text-hi:#0f1428;--text-label:#4a5280;
+  --text:#1f2028;--text-dim:#646878;--text-hi:#0e0f16;--text-label:#484c5e;
 }
 
 /* Smooth theme transitions on key surfaces */
-body, #toolbar, #lpanel, #rpanel,
-.lp-section, .settings-box, .ai-box, .help-box,
-.ci, .modal-box, #status, #hints {
-  transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+body,#toolbar,#lpanel,#rpanel,
+.lp-section,.settings-box,.ai-box,.help-box,
+.ci,.modal-box,#status,#hints{
+  transition:background-color .2s ease,border-color .2s ease,color .2s ease;
 }
 
-/* Light mode overrides for elements that use hardcoded dark colours */
-[data-theme="light"] body{ background:var(--bg); color:var(--text); }
-[data-theme="light"] #toolbar{ background:var(--panel); border-bottom:1px solid var(--border); }
-[data-theme="light"] #lpanel{ background:rgba(255,255,255,.97); }
-[data-theme="light"] #rpanel{ background:rgba(248,249,252,.98); border-color:var(--border-hi); }
-[data-theme="light"] .lp-section{ border-bottom:1px solid var(--border); }
-[data-theme="light"] .lp-section-header{ background:rgba(240,242,247,.6); }
-[data-theme="light"] .ci{ border-bottom:1px solid rgba(180,188,210,.3); }
-[data-theme="light"] .ci:hover{ background:rgba(0,102,204,.06); }
-[data-theme="light"] .ci.sel{ background:rgba(224,85,0,.10); }
-[data-theme="light"] .ci.face-sel{ background:rgba(126,34,206,.08); }
-[data-theme="light"] #status{ background:rgba(240,242,247,.98); border-top:1px solid var(--border); }
-[data-theme="light"] #hints{ background:rgba(255,255,255,.95); border-color:var(--border-hi); }
-[data-theme="light"] #dropzone{ background:var(--bg); }
-[data-theme="light"] #loading{ background:rgba(240,242,247,.94); }
-[data-theme="light"] .settings-box{ background:#ffffff; border-color:var(--border-hi); }
-[data-theme="light"] .settings-section{ border-bottom:1px solid var(--border); }
-[data-theme="light"] .ai-box{ background:#f8f9fc; border-color:var(--border-hi); }
-[data-theme="light"] .help-box{ background:#f8f9fc; border-color:var(--border-hi); }
-[data-theme="light"] .help-box::before,[data-theme="light"] .help-box::after{ border-color:var(--accent); }
-[data-theme="light"] .rp-hdr{ background:var(--panel); }
-[data-theme="light"] #rp-sort{ background:rgba(0,102,204,.06); border-color:rgba(0,102,204,.3); color:var(--text-hi); }
-[data-theme="light"] .rp-sel-btn{ background:var(--panel); }
-[data-theme="light"] .tbtn{ color:var(--text); border-color:var(--border-hi); }
-[data-theme="light"] .tbtn:hover{ border-color:var(--accent); color:var(--accent); background:var(--accent-glow); }
-[data-theme="light"] .meth-btn{ border-color:var(--border); color:var(--text-label); }
-[data-theme="light"] .meth-btn.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
-[data-theme="light"] .action-btn{ background:var(--accent-glow); border-color:var(--accent); color:var(--accent); }
-[data-theme="light"] .half-btn{ border-color:var(--border-hi); color:var(--text-label); }
-[data-theme="light"] .ex-sl, [data-theme="light"] .wand-sl, [data-theme="light"] .warn-sl{
-  background:var(--border);
+/* ── Light mode surface overrides ── */
+[data-theme="light"] body{background:var(--bg);color:var(--text);}
+[data-theme="light"] #toolbar{background:#f2f3f5;border-bottom:1px solid var(--border);}
+[data-theme="light"] #lpanel{background:rgba(247,248,249,.98);}
+[data-theme="light"] #rpanel{background:rgba(242,243,245,.98);border-color:var(--border-hi);}
+[data-theme="light"] .lp-section{border-bottom:1px solid var(--border);}
+[data-theme="light"] .lp-section-header{background:rgba(200,202,204,.15);}
+[data-theme="light"] .ci{border-bottom:1px solid rgba(164,168,174,.25);}
+[data-theme="light"] .ci:hover{background:rgba(67,56,202,.06);}
+[data-theme="light"] .ci.sel{background:rgba(194,65,12,.09);}
+[data-theme="light"] .ci.face-sel{background:rgba(126,34,206,.08);}
+[data-theme="light"] #status{background:rgba(236,237,239,.98);border-top:1px solid var(--border);}
+[data-theme="light"] #hints{background:rgba(247,248,249,.96);border-color:var(--border-hi);}
+[data-theme="light"] #dropzone{background:var(--bg);}
+[data-theme="light"] #loading{background:rgba(236,237,239,.95);}
+[data-theme="light"] .settings-box{background:#f7f8f9;border-color:var(--border-hi);}
+[data-theme="light"] .settings-section{border-bottom:1px solid var(--border);}
+[data-theme="light"] .ai-box{background:#f4f5f7;border-color:var(--border-hi);}
+[data-theme="light"] .help-box{background:#f4f5f7;border-color:var(--border-hi);}
+[data-theme="light"] .help-box::before,[data-theme="light"] .help-box::after{border-color:var(--accent);}
+[data-theme="light"] .help-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+[data-theme="light"] .help-h1{color:var(--text-hi);}
+[data-theme="light"] .help-h2{color:var(--accent);}
+[data-theme="light"] .rp-hdr{background:#f2f3f5;}
+[data-theme="light"] #rp-sort{background:rgba(67,56,202,.06);border-color:rgba(67,56,202,.3);color:var(--text-hi);}
+[data-theme="light"] .rp-sel-btn{background:var(--panel);}
+[data-theme="light"] .tbtn{color:var(--text);border-color:var(--border-hi);}
+[data-theme="light"] .tbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+[data-theme="light"] .tbtn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+[data-theme="light"] .meth-btn{border-color:var(--border);color:var(--text-label);}
+[data-theme="light"] .meth-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+[data-theme="light"] .action-btn{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);}
+[data-theme="light"] .half-btn{border-color:var(--border-hi);color:var(--text-label);}
+[data-theme="light"] .ex-sl,[data-theme="light"] .wand-sl,[data-theme="light"] .warn-sl{background:var(--border);}
+[data-theme="light"] #seg-warn{background:rgba(133,77,14,.06);}
+[data-theme="light"] .modal-box{background:#f7f8f9;border-color:var(--border-hi);}
+[data-theme="light"] .rp-action-bar{background:rgba(185,28,28,.03);}
+[data-theme="light"] #guard-modal > div > div{background:#f7f8f9;}
+[data-theme="light"] .lp-section-body *{color:var(--text-label);}
+[data-theme="light"] .lp-title{color:var(--accent);}
+[data-theme="light"] .lp-title.wand-title{color:var(--wand);}
+[data-theme="light"] .lp-title.orient-title{color:var(--orient);}
+[data-theme="light"] .lp-title.explode-title{color:var(--explode);}
+[data-theme="light"] .lp-title.export-title{color:var(--export);}
+[data-theme="light"] .lp-title.move-title{color:var(--move);}
+[data-theme="light"] .slider-label{color:var(--text-label);}
+[data-theme="light"] input[type=range]{accent-color:var(--accent);}
+[data-theme="light"] .rp-hdr{color:var(--accent);}
+[data-theme="light"] .rp-hdr-count{color:var(--text-dim);}
+[data-theme="light"] .ci-name{color:var(--text);}
+[data-theme="light"] .ci-tri{color:var(--text-dim);}
+[data-theme="light"] .ci-dot{background:var(--text-dim);}
+[data-theme="light"] .ci.sel .ci-dot{background:var(--sel);}
+[data-theme="light"] #viewcube-wrap{background:rgba(236,237,239,.55);border-color:rgba(164,168,174,.4);}
+[data-theme="light"] #viewcube{border-color:var(--border-hi);}
+[data-theme="light"] .vc-btn{
+  background:rgba(242,243,245,.95);
+  border-color:var(--border-hi);
+  color:var(--text-label);
 }
-[data-theme="light"] #seg-warn{ background:rgba(204,136,0,.06); }
-[data-theme="light"] .modal-box{ background:#ffffff; border-color:var(--border-hi); }
-[data-theme="light"] .rp-action-bar{ background:rgba(204,17,51,.03); }
-[data-theme="light"] .guard-modal > div{ background:#ffffff; }
-[data-theme="light"] #guard-modal > div > div:first-child > div:last-child{
-  background:#fff8f0;
+[data-theme="light"] .vc-btn:hover{
+  border-color:var(--accent);
+  color:var(--accent);
+  background:var(--accent-glow);
 }
-/* Three.js renderer background handled in JS via setTheme() */
+/* Three.js renderer background handled in JS applyTheme() */
 body{background:var(--bg);color:var(--text);font-family:var(--ff-ui);overflow:hidden;height:100vh;}
 
 /* ── TOOLBAR ── */
@@ -323,7 +350,9 @@ input[type=range]:disabled{opacity:.35;pointer-events:none;}
   appearance:auto;-webkit-appearance:auto;outline:none;
 }
 #rp-sort:hover,#rp-sort:focus{border-color:var(--accent);background:var(--accent-glow);}
-#rp-sort option{background:#0a0f1a;color:var(--text-hi);font-family:var(--ff-mono);font-size:11px;}
+#rp-sort option{background:#16182e;color:var(--text-hi);font-family:var(--ff-mono);font-size:11px;}
+/* Ensure dark-mode font picker selects keep their explicit dark background */
+#opt-ui-font,#opt-mono-font{color-scheme:dark;}
 
 /* Row 3: select-all toolbar — 4 equal buttons + count on its own line */
 .rp-sel-bar{
@@ -606,6 +635,13 @@ body.move.dragging #canvas{cursor:grabbing;}
 }
 #lpanel.layout-locked .lp-section{cursor:default;}
 #lpanel.layout-locked .lp-section.dragging-over{border-top:none;}
+
+.model-cp{
+  width:22px;height:22px;border:2px solid rgba(255,255,255,.15);cursor:pointer;
+  flex-shrink:0;transition:border-color .12s,transform .1s;border-radius:2px;padding:0;
+}
+.model-cp:hover{border-color:rgba(255,255,255,.7);transform:scale(1.15);}
+.model-cp.active{border-color:#fff;box-shadow:0 0 5px rgba(255,255,255,.5);}
 
 /* ── TRIANGLE COLOR SWATCHES ── */
 .tri-cp{
@@ -947,6 +983,34 @@ body.move.dragging #canvas{cursor:grabbing;}
       <div id="seg-warn" class="on">Load an STL to begin.</div>
     </div>
 
+    <!-- Model Color -->
+    <div class="lp-section" data-section-id="modelcolor">
+      <div class="lp-title" style="color:var(--accent);">Model Color</div>
+      <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);margin-bottom:8px;">
+        Sets the base display color of all unselected parts.
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <input type="color" id="model-color-pick" value="#6688aa"
+          style="width:44px;height:32px;border:1px solid var(--border-hi);background:transparent;cursor:pointer;padding:2px;flex-shrink:0;">
+        <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1;" id="model-color-presets">
+          <button class="model-cp" data-c="#6688aa" title="Steel Blue (default)"  style="background:#6688aa;" class="model-cp active"></button>
+          <button class="model-cp" data-c="#c0c0c0" title="Silver"                style="background:#c0c0c0;"></button>
+          <button class="model-cp" data-c="#e8d5b7" title="Bone / PLA"            style="background:#e8d5b7;"></button>
+          <button class="model-cp" data-c="#ff6b35" title="Orange"                style="background:#ff6b35;"></button>
+          <button class="model-cp" data-c="#2ecc71" title="Green"                 style="background:#2ecc71;"></button>
+          <button class="model-cp" data-c="#3498db" title="Blue"                  style="background:#3498db;"></button>
+          <button class="model-cp" data-c="#9b59b6" title="Purple"                style="background:#9b59b6;"></button>
+          <button class="model-cp" data-c="#e74c3c" title="Red"                   style="background:#e74c3c;"></button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);">METALNESS</div>
+        <input type="range" id="model-shininess" min="0" max="100" value="35" step="1"
+          style="flex:1;height:3px;" disabled>
+        <strong id="lbl-model-shine" style="font-family:var(--ff-mono);font-size:10px;color:var(--text-hi);min-width:30px;">35</strong>
+      </div>
+    </div>
+
     <!-- Wand Settings -->
     <div class="lp-section" data-section-id="wand">
       <div class="lp-title wand-title">Wand Tolerance</div>
@@ -1013,7 +1077,7 @@ body.move.dragging #canvas{cursor:grabbing;}
     <div class="lp-section" data-section-id="reorient">
       <div class="lp-title orient-title">Re-Orient <em id="orient-tgt-lbl">(MODEL)</em></div>
 
-      <!-- Target -->
+
       <div class="orient-target-row">
         <button class="meth-btn orient-active" id="orient-tgt-model">WHOLE MODEL</button>
         <button class="meth-btn" id="orient-tgt-sel">SELECTION</button>
@@ -1119,7 +1183,7 @@ body.move.dragging #canvas{cursor:grabbing;}
       </div>
       <div class="btn-row">
         <button class="half-btn" id="btn-move-reset" disabled style="border-color:#3a1a05;color:var(--move);">RESET POS</button>
-        <button class="half-btn" id="btn-move-ground" disabled style="border-color:#1a3a05;color:#86efac;" title="Snap selected parts (or whole model) to Y=0">⬇ TO GROUND</button>
+        <button class="half-btn" id="btn-move-ground" disabled style="border-color:#1a3a05;color:#86efac;" title="Snap selected parts (or whole model) to Z=0">⬇ TO GROUND</button>
       </div>
       <div style="font-family:var(--ff-mono);font-size:9px;color:var(--text-dim);margin-top:5px;line-height:1.4;">
         Moves are baked automatically on release. TO GROUND snaps lowest point to Y=0.
@@ -1441,19 +1505,18 @@ body.move.dragging #canvas{cursor:grabbing;}
         <div class="settings-row" style="align-items:flex-start;flex-direction:column;gap:6px;">
           <span class="settings-label">UI FONT (labels, buttons, panels)</span>
           <select id="opt-ui-font" style="
-            width:100%;height:32px;background:rgba(255,255,255,.04);
-            border:1px solid var(--border-hi);color:var(--text-hi);
+            width:100%;height:32px;background:#16182e;
+            border:1px solid #3a3d6e;color:var(--text-hi);
             font-family:var(--ff-mono);font-size:10px;padding:0 8px;
             outline:none;cursor:pointer;appearance:auto;">
-            <option value="Rajdhani">Rajdhani — compact, technical</option>
-            <option value="DM Sans" selected>DM Sans — geometric, legible ✓ default</option>
-            <option value="Inter">Inter — clean, highly readable</option>
-            <option value="IBM Plex Sans">IBM Plex Sans — professional, neutral</option>
-            <option value="Nunito">Nunito — rounded, friendly</option>
-            <option value="Barlow">Barlow — condensed, modern</option>
-            <option value="DM Sans">DM Sans — geometric, legible</option>
-            <option value="Outfit">Outfit — minimal, contemporary</option>
-            <option value="Noto Sans">Noto Sans — universal coverage</option>
+            <option value="Rajdhani"         style="background:#16182e;color:#e8eeff;">Rajdhani — compact, technical</option>
+            <option value="DM Sans" selected  style="background:#16182e;color:#e8eeff;">DM Sans — geometric, legible ✓ default</option>
+            <option value="Inter"             style="background:#16182e;color:#e8eeff;">Inter — clean, highly readable</option>
+            <option value="IBM Plex Sans"     style="background:#16182e;color:#e8eeff;">IBM Plex Sans — professional, neutral</option>
+            <option value="Nunito"            style="background:#16182e;color:#e8eeff;">Nunito — rounded, friendly</option>
+            <option value="Barlow"            style="background:#16182e;color:#e8eeff;">Barlow — condensed, modern</option>
+            <option value="Outfit"            style="background:#16182e;color:#e8eeff;">Outfit — minimal, contemporary</option>
+            <option value="Noto Sans"         style="background:#16182e;color:#e8eeff;">Noto Sans — universal coverage</option>
           </select>
         </div>
 
@@ -1461,19 +1524,18 @@ body.move.dragging #canvas{cursor:grabbing;}
         <div class="settings-row" style="align-items:flex-start;flex-direction:column;gap:6px;margin-top:8px;">
           <span class="settings-label">MONO FONT (data values, codes, labels)</span>
           <select id="opt-mono-font" style="
-            width:100%;height:32px;background:rgba(255,255,255,.04);
-            border:1px solid var(--border-hi);color:var(--text-hi);
+            width:100%;height:32px;background:#16182e;
+            border:1px solid #3a3d6e;color:var(--text-hi);
             font-family:var(--ff-mono);font-size:10px;padding:0 8px;
             outline:none;cursor:pointer;appearance:auto;">
-            <option value="Share Tech Mono">Share Tech Mono — techy</option>
-            <option value="JetBrains Mono" selected>JetBrains Mono — developer favourite ✓ default</option>
-            <option value="JetBrains Mono">JetBrains Mono — developer favourite</option>
-            <option value="Fira Code">Fira Code — ligatures, highly readable</option>
-            <option value="Source Code Pro">Source Code Pro — classic, clean</option>
-            <option value="IBM Plex Mono">IBM Plex Mono — balanced, crisp</option>
-            <option value="Inconsolata">Inconsolata — narrow, elegant</option>
-            <option value="Roboto Mono">Roboto Mono — familiar, neutral</option>
-            <option value="Space Mono">Space Mono — wide, retro</option>
+            <option value="Share Tech Mono"  style="background:#16182e;color:#e8eeff;">Share Tech Mono — techy</option>
+            <option value="JetBrains Mono" selected style="background:#16182e;color:#e8eeff;">JetBrains Mono — developer favourite ✓ default</option>
+            <option value="Fira Code"        style="background:#16182e;color:#e8eeff;">Fira Code — ligatures, highly readable</option>
+            <option value="Source Code Pro"  style="background:#16182e;color:#e8eeff;">Source Code Pro — classic, clean</option>
+            <option value="IBM Plex Mono"    style="background:#16182e;color:#e8eeff;">IBM Plex Mono — balanced, crisp</option>
+            <option value="Inconsolata"      style="background:#16182e;color:#e8eeff;">Inconsolata — narrow, elegant</option>
+            <option value="Roboto Mono"      style="background:#16182e;color:#e8eeff;">Roboto Mono — familiar, neutral</option>
+            <option value="Space Mono"       style="background:#16182e;color:#e8eeff;">Space Mono — wide, retro</option>
           </select>
         </div>
 
@@ -1970,20 +2032,170 @@ const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x07070f);
 scene.fog=new THREE.FogExp2(0x07070f,0.0006);
 const gridHelper=new THREE.GridHelper(400,60,0x3a4570,0x252d50);
+gridHelper.rotation.x=Math.PI/2; // rotate grid to XY plane — Z is up
 scene.add(gridHelper);
-const axH=new THREE.AxesHelper(3);scene.add(axH);
+// ── Labelled axis arrows + mm tick scale ──────────────────────────────────
+const axH=new THREE.AxesHelper(3); axH.visible=false; scene.add(axH); // kept for scale calc
+let axisGroup=null;
+
+function buildAxisLabels(modelSize){
+  if(axisGroup){
+    scene.remove(axisGroup);
+    axisGroup.traverse(o=>{
+      if(o.geometry) o.geometry.dispose();
+      if(o.material) o.material.dispose();
+    });
+    axisGroup=null;
+  }
+  axisGroup=new THREE.Group();
+
+  // Grid world size: GridHelper(400,60) scaled by Max(1, modelSize/100)
+  const gridScale = Math.max(1, modelSize/100);
+  const gridHalf  = 200 * gridScale;          // half the grid width in world units
+  const mmPerUnit = 1;                        // 1 Three.js unit = 1 mm
+
+  // ── Corner position: lower-left of grid (−X, −Y, Z=0) ────────────────
+  const corner = new THREE.Vector3(-gridHalf, -gridHalf, 0);
+
+  // ── Arrow proportions based on model size ─────────────────────────────
+  const arrowLen = modelSize * 0.22;          // arrow shaft length
+  const R        = modelSize * 0.006;         // shaft radius
+  const H        = modelSize * 0.025;         // cone head height
+  const CR       = modelSize * 0.013;         // cone base radius
+
+  const axisDefs = [
+    {axis:'x', dir:new THREE.Vector3(1,0,0), color:0xff4444, label:'X'},
+    {axis:'y', dir:new THREE.Vector3(0,1,0), color:0x44dd44, label:'Y'},
+    {axis:'z', dir:new THREE.Vector3(0,0,1), color:0x4488ff, label:'Z'},
+  ];
+
+  axisDefs.forEach(({axis, dir, color, label})=>{
+    const shaftLen = arrowLen - H;
+    const mat = new THREE.MeshBasicMaterial({color, depthTest:false});
+
+    // Shaft: CylinderGeometry along +Y by default
+    const shaftGeo = new THREE.CylinderGeometry(R, R, shaftLen, 8);
+    shaftGeo.applyMatrix4(new THREE.Matrix4().makeTranslation(0, shaftLen/2, 0));
+    const shaft = new THREE.Mesh(shaftGeo, mat);
+
+    const coneGeo = new THREE.ConeGeometry(CR, H, 8);
+    coneGeo.applyMatrix4(new THREE.Matrix4().makeTranslation(0, shaftLen + H/2, 0));
+    const cone = new THREE.Mesh(coneGeo, mat);
+
+    const arrowGrp = new THREE.Group();
+    arrowGrp.add(shaft); arrowGrp.add(cone);
+    // Rotate to correct axis direction
+    if(axis==='x') arrowGrp.rotation.z = -Math.PI/2;
+    else if(axis==='z') arrowGrp.rotation.x = Math.PI/2;
+    // Place at corner
+    arrowGrp.position.copy(corner);
+    axisGroup.add(arrowGrp);
+
+    // Axis label sprite
+    const tc = document.createElement('canvas'); tc.width=64; tc.height=64;
+    const ctx = tc.getContext('2d');
+    ctx.fillStyle = '#'+color.toString(16).padStart(6,'0');
+    ctx.font = 'bold 44px monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(label, 32, 36);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(tc), depthTest:false}));
+    sp.position.copy(corner).addScaledVector(dir, arrowLen * 1.25);
+    sp.scale.set(modelSize*0.06, modelSize*0.06, 1);
+    axisGroup.add(sp);
+  });
+
+  // ── Tick marks + labels spanning full grid along X and Y axes ─────────
+  const mmStep     = guessTickStep(gridHalf * 2); // span = full grid width
+  const tickLen    = modelSize * 0.014;
+  const tickR      = modelSize * 0.0025;
+  const tickColor  = 0x6677aa;
+  const tickMat    = new THREE.MeshBasicMaterial({color:tickColor, depthTest:false});
+  const labelInset = modelSize * 0.04; // how far off-axis the mm labels sit
+
+  // Run ticks from -gridHalf to +gridHalf on both X and Y
+  const tickStarts = [];
+  for(let v = -gridHalf+mmStep; v <= gridHalf; v+=mmStep) tickStarts.push(Math.round(v));
+
+  tickStarts.forEach(v=>{
+    // X-axis tick (at Y = -gridHalf, spanning a short distance in Y)
+    const txGeo = new THREE.CylinderGeometry(tickR, tickR, tickLen, 4);
+    txGeo.applyMatrix4(new THREE.Matrix4().makeRotationZ(Math.PI/2));
+    const tx = new THREE.Mesh(txGeo, tickMat);
+    tx.position.set(v, -gridHalf, 0);
+    axisGroup.add(tx);
+
+    // Y-axis tick (at X = -gridHalf, spanning a short distance in X)
+    const tyGeo = new THREE.CylinderGeometry(tickR, tickR, tickLen, 4);
+    const ty = new THREE.Mesh(tyGeo, tickMat);
+    ty.position.set(-gridHalf, v, 0);
+    axisGroup.add(ty);
+
+    // Labels every other major tick, showing actual mm value
+    if(Math.round(v/mmStep)%2===0){
+      const mmVal = Math.round(v * mmPerUnit); // convert to mm
+      const txt = mmVal+'mm';
+
+      // X label below grid edge
+      const xcv=document.createElement('canvas'); xcv.width=128; xcv.height=48;
+      const xctx=xcv.getContext('2d');
+      xctx.fillStyle='#6677aa'; xctx.font='bold 26px monospace';
+      xctx.textAlign='center'; xctx.textBaseline='middle';
+      xctx.fillText(txt,64,24);
+      const xsp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(xcv),depthTest:false,transparent:true,opacity:0.75}));
+      xsp.position.set(v, -gridHalf-labelInset, 0);
+      xsp.scale.set(modelSize*0.07, modelSize*0.028, 1);
+      axisGroup.add(xsp);
+
+      // Y label left of grid edge
+      const ycv=document.createElement('canvas'); ycv.width=128; ycv.height=48;
+      const yctx=ycv.getContext('2d');
+      yctx.fillStyle='#6677aa'; yctx.font='bold 26px monospace';
+      yctx.textAlign='center'; yctx.textBaseline='middle';
+      yctx.fillText(txt,64,24);
+      const ysp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(ycv),depthTest:false,transparent:true,opacity:0.75}));
+      ysp.position.set(-gridHalf-labelInset, v, 0);
+      ysp.scale.set(modelSize*0.07, modelSize*0.028, 1);
+      axisGroup.add(ysp);
+    }
+  });
+
+  scene.add(axisGroup);
+}
+
+function guessTickStep(totalSpan){
+  // Pick a step so we get roughly 10–16 ticks across the full span
+  const steps=[1,2,5,10,25,50,100,250,500,1000,2500,5000];
+  const target=totalSpan/12;
+  return steps.reduce((best,s)=>Math.abs(s-target)<Math.abs(best-target)?s:best,steps[0]);
+}
 scene.add(new THREE.AmbientLight(0x2a2a50,0.8));
-const d1=new THREE.DirectionalLight(0x8090c8,1.0);d1.position.set(6,12,8);scene.add(d1);
-const d2=new THREE.DirectionalLight(0x4af8ff,0.25);d2.position.set(-6,3,-6);scene.add(d2);
-const d3=new THREE.DirectionalLight(0x553366,0.3);d3.position.set(0,-5,0);scene.add(d3);
+const d1=new THREE.DirectionalLight(0x8090c8,1.0);d1.position.set(6,8,12);scene.add(d1);
+const d2=new THREE.DirectionalLight(0x4af8ff,0.25);d2.position.set(-6,-6,3);scene.add(d2);
+const d3=new THREE.DirectionalLight(0x553366,0.3);d3.position.set(0,0,-5);scene.add(d3);
 
 const camera=new THREE.PerspectiveCamera(45,1,0.01,50000);
+camera.up.set(0,0,1); // Z is up
 const raycaster=new THREE.Raycaster();
 
 const MAT_SEL=new THREE.MeshPhongMaterial({color:0xff6600,emissive:0x2a1000,specular:0x442200,shininess:60,side:THREE.DoubleSide});
 const MAT_HOV=new THREE.MeshPhongMaterial({color:0x00ffc8,emissive:0x003322,specular:0x004433,shininess:80,side:THREE.DoubleSide});
 const MAT_HIDDEN=new THREE.MeshBasicMaterial({visible:false});
-function matNorm(){return new THREE.MeshPhongMaterial({color:0x6688aa,specular:0x1a2233,shininess:35,side:THREE.DoubleSide});}
+let modelColor=0x6688aa, modelShininess=35;
+function matNorm(){
+  const spec=new THREE.Color(modelColor).multiplyScalar(0.3);
+  return new THREE.MeshPhongMaterial({color:modelColor,specular:spec,shininess:modelShininess,side:THREE.DoubleSide});
+}
+function applyModelColorToAll(){
+  meshes.forEach(m=>{
+    if(selSet.has(m)||hiddenSet.has(m)) return;
+    const spec=new THREE.Color(modelColor).multiplyScalar(0.3);
+    m.userData.mat.color.setHex(modelColor);
+    m.userData.mat.specular.copy(spec);
+    m.userData.mat.shininess=modelShininess;
+    m.userData.mat.needsUpdate=true;
+    if(m.material===m.userData.mat) m.material.needsUpdate=true;
+  });
+}
 
 // ══════════════════════════════════════════════
 // STATE
@@ -2016,7 +2228,7 @@ let wandContiguous=true;  // default on: edge-connected spread
 let moveOffset=new THREE.Vector3();
 let moveIsDragging=false;
 let moveIsDraggingVertical=false;
-const moveDragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+const moveDragPlane=new THREE.Plane(new THREE.Vector3(0,0,1),0); // Z-up ground
 const moveDragStart=new THREE.Vector3();
 const moveGroupStart=new THREE.Vector3();
 let moveOriginPos=new THREE.Vector3();
@@ -2049,7 +2261,8 @@ document.addEventListener('DOMContentLoaded',()=>{ resize(); requestAnimationFra
 // ══════════════════════════════════════════════
 function camUpdate(){
   const sp=Math.sin(phi),cp=Math.cos(phi),st=Math.sin(theta),ct=Math.cos(theta);
-  camera.position.set(panX+radius*sp*st,panY+radius*cp,radius*sp*ct);
+  // Z-up: Z=cosφ·r is the vertical component
+  camera.position.set(panX+radius*sp*st, panY+radius*sp*ct, radius*cp);
   camera.lookAt(panX,panY,0);
 }
 camUpdate();
@@ -2095,8 +2308,8 @@ canvas.addEventListener('mousedown',e=>{
       moveDragPlane.normal.copy(camDir);
       moveDragPlane.constant=-refPos.dot(camDir);
     } else {
-      moveDragPlane.normal.set(0,1,0);
-      moveDragPlane.constant = movingParts ? -refPos.y : -group.position.y;
+      moveDragPlane.normal.set(0,0,1);
+      moveDragPlane.constant = movingParts ? -refPos.z : -group.position.z;
     }
     const ray=new THREE.Raycaster();
     ray.setFromCamera(toNDC(e),camera);
@@ -2143,7 +2356,7 @@ canvas.addEventListener('mousemove',e=>{
           // Move each selected part individually
           partMoveStarts.forEach((startPos,m)=>{
             if(moveIsDraggingVertical){
-              m.position.set(startPos.x, startPos.y + delta.y, startPos.z);
+              m.position.set(startPos.x, startPos.y, startPos.z + delta.z);
             } else {
               m.position.set(startPos.x + delta.x, startPos.y, startPos.z + delta.z);
             }
@@ -2263,7 +2476,7 @@ canvas.addEventListener('wheel',e=>{
 
   // Intersect a plane perpendicular to the view direction,
   // located at the current orbit target (panX, panY, 0)
-  const targetPt = new THREE.Vector3(panX, panY, 0);
+  const targetPt = new THREE.Vector3(panX, panY, 0); // Z=0 ground plane
   const camDir   = new THREE.Vector3();
   camera.getWorldDirection(camDir);
   const plane    = new THREE.Plane().setFromNormalAndCoplanarPoint(camDir, targetPt);
@@ -2995,17 +3208,17 @@ function moveToGround(){
   if(!targets.length) return;
 
   targets.forEach(m=>{
-    // Find the minimum Y across all vertices in world space
+    // Find the minimum Z across all vertices in world space
     const pa = m.geometry.attributes.position;
-    let minY = Infinity;
+    let minZ = Infinity;
     const v = new THREE.Vector3();
     for(let i=0;i<pa.count;i++){
       v.fromBufferAttribute(pa,i).applyMatrix4(m.matrixWorld);
-      if(v.y < minY) minY = v.y;
+      if(v.z < minZ) minZ = v.z;
     }
-    if(!isFinite(minY)) return;
-    const dy = -minY; // amount needed to lift bottom to Y=0
-    for(let i=0;i<pa.count;i++) pa.setY(i, pa.getY(i)+dy);
+    if(!isFinite(minZ)) return;
+    const dz = -minZ; // amount needed to lift bottom to Z=0
+    for(let i=0;i<pa.count;i++) pa.setZ(i, pa.getZ(i)+dz);
     pa.needsUpdate = true;
     m.geometry.computeBoundingSphere();
     faceAdjCache.delete(m); faceNormCache.delete(m);
@@ -3016,14 +3229,14 @@ function moveToGround(){
   // Also snap the group Y so it doesn't offset things
   if(selSet.size===0){
     // Whole-model snap — also correct group.position
-    let minGY = Infinity;
+    let minGZ = Infinity;
     for(const m of meshes){
       if(!m.geometry.boundingBox) m.geometry.computeBoundingBox();
-      const worldMin = m.geometry.boundingBox.min.y + m.position.y + group.position.y;
-      if(worldMin < minGY) minGY = worldMin;
+      const worldMin = m.geometry.boundingBox.min.z + m.position.z + group.position.z;
+      if(worldMin < minGZ) minGZ = worldMin;
     }
-    // The geometry already moved, so just centre group
-    group.position.y = moveOriginPos.y;
+    // The geometry already moved, so just reset group Z
+    group.position.z = moveOriginPos.z;
   }
 
   syncRawFromMeshes();
@@ -3031,7 +3244,7 @@ function moveToGround(){
   updateMoveCoords();
   const label = selSet.size>0
     ? `${targets.length} part${targets.length!==1?'s':''}` : 'model';
-  setStatus(`⬇ Snapped ${label} to ground (Y = 0).`);
+  setStatus(`⬇ Snapped ${label} to ground (Z = 0).`);
   refreshUI();
 }
 
@@ -3319,6 +3532,8 @@ async function loadSTL(file){
     const p = parseSTL(buf);
     rawPos=p.pos; rawNrm=p.nrm;
     const F = rawPos.length/9;
+
+
     document.getElementById('sv-tri').textContent=F.toLocaleString();
     if(!F) throw new Error('No triangles found in this file.');
     if(F > MAX_TRIANGLES){
@@ -3420,13 +3635,19 @@ async function buildMeshes(msg,fitCam){
 
   if(fitCam){
     const box=new THREE.Box3().setFromObject(group);
-    const center=box.getCenter(new THREE.Vector3());
     const size=box.getSize(new THREE.Vector3());
     const maxD=Math.max(size.x,size.y,size.z);
-    group.position.sub(center).setY(group.position.y+size.y/2);
-    radius=maxD*1.9;panX=0;panY=0;theta=0.4;phi=1.05;camUpdate();
+    // Import exactly as saved: NO rotation, NO axis swap.
+    // Only translate vertically so the lowest point of the model sits on Y=0.
+    // Horizontal position is also zeroed so the model is centred on the grid.
+    const center=box.getCenter(new THREE.Vector3());
+    group.position.x = -center.x;
+    group.position.y = -center.y;
+    group.position.z = -box.min.z; // lift bottom to Z=0 (ground plane)
+    radius=maxD*1.9;panX=0;panY=0;theta=Math.PI+0.5;phi=1.0;camUpdate();
     gridHelper.scale.setScalar(Math.max(1,maxD/100));
     axH.scale.setScalar(maxD*0.08);
+    buildAxisLabels(maxD);
     moveOriginPos.copy(group.position);
     moveOffset.set(0,0,0);
     updateMoveCoords();
@@ -3559,6 +3780,8 @@ function refreshUI(){
   document.getElementById('sl-explode').disabled=!has;
   document.getElementById('lp-ct').textContent=has?`(${meshes.length})`:'';
   document.getElementById('sl-wand-tol').disabled=!has;
+  const shineEl=document.getElementById('model-shininess');
+  if(shineEl) shineEl.disabled=!has;
 
   // orient controls
   const orientSelOk=has&&(orientTarget==='model'||sc>0);
@@ -3575,6 +3798,7 @@ function refreshUI(){
   document.getElementById('btn-orient-reset').disabled=!has;
   document.getElementById('btn-move-reset').disabled=!has;
   document.getElementById('btn-move-ground').disabled=!has;
+
   document.getElementById('sl-mv-y').disabled=!has;
 
   // Update move context message
@@ -3989,6 +4213,11 @@ document.getElementById('chk-contiguous').addEventListener('change',function(){
   document.getElementById(`ax-${id}-p90`).onclick=fire(+90);
 });
 document.getElementById('btn-orient-reset').onclick=resetOrientPreview;
+
+// ── Orientation Quick-Fix buttons ──────────────────────────────────────────
+// Each applies a hard bake directly to rawPos/rawNrm + all mesh geometries,
+// then re-segments so the result is permanent and correct.
+
 document.getElementById('orient-tgt-model').onclick=()=>setOrientTarget('model');
 document.getElementById('orient-tgt-sel').onclick=()=>setOrientTarget('sel');
 
@@ -4747,17 +4976,19 @@ vcRenderer.setClearColor(0x000000,0);
 
 const vcScene=new THREE.Scene();
 const vcCamera=new THREE.PerspectiveCamera(40,1,0.1,100);
-vcCamera.position.set(2.5,2,2.5);
+vcCamera.up.set(0,0,1); // Z-up
+vcCamera.position.set(2.5,2.5,2);
 vcCamera.lookAt(0,0,0);
 vcScene.add(new THREE.AmbientLight(0xffffff,0.6));
 const vcLight=new THREE.DirectionalLight(0xffffff,0.8);
-vcLight.position.set(3,5,3);
+vcLight.position.set(3,3,5);
 vcScene.add(vcLight);
 
-// Build the cube with 6 coloured faces
-const vcFaceColors=[0x3a5080,0x2a3a60,0x404060,0x303050,0x354070,0x253050];
+// Build the cube with 6 coloured faces — colors swapped in updateViewCubeTheme()
+const VC_COLORS_DARK  = [0x3a5080,0x2a3a60,0x404060,0x303050,0x354070,0x253050];
+const VC_COLORS_LIGHT = [0x8899d8,0x7080c8,0x8888b8,0x7878a8,0x8090c8,0x6878b8];
 const vcFaceGeo=new THREE.BoxGeometry(1.6,1.6,1.6);
-const vcFaceMats=vcFaceColors.map(c=>new THREE.MeshPhongMaterial({color:c,transparent:true,opacity:0.92}));
+const vcFaceMats=VC_COLORS_DARK.map(c=>new THREE.MeshPhongMaterial({color:c,transparent:true,opacity:0.92}));
 const vcCube=new THREE.Mesh(vcFaceGeo,vcFaceMats);
 vcScene.add(vcCube);
 
@@ -4765,49 +4996,67 @@ vcScene.add(vcCube);
 const vcWire=new THREE.LineSegments(new THREE.EdgesGeometry(vcFaceGeo),new THREE.LineBasicMaterial({color:0x6688cc,transparent:true,opacity:0.7}));
 vcScene.add(vcWire);
 
-// Face labels using canvas textures
+// Face labels using canvas textures — rebuilt on theme change
 const vcLabelData=[
-  {text:'FRONT', dir:new THREE.Vector3(0,0,1)},
-  {text:'BACK',  dir:new THREE.Vector3(0,0,-1)},
-  {text:'RIGHT', dir:new THREE.Vector3(1,0,0)},
-  {text:'LEFT',  dir:new THREE.Vector3(-1,0,0)},
-  {text:'TOP',   dir:new THREE.Vector3(0,1,0)},
-  {text:'BTM',   dir:new THREE.Vector3(0,-1,0)},
+  {text:'FRONT', dir:new THREE.Vector3( 0,-1, 0)}, // -Y face, visible from -Y (front view)
+  {text:'BACK',  dir:new THREE.Vector3( 0, 1, 0)}, // +Y face, visible from +Y (back view)
+  {text:'RIGHT', dir:new THREE.Vector3( 1, 0, 0)}, // +X face
+  {text:'LEFT',  dir:new THREE.Vector3(-1, 0, 0)}, // -X face
+  {text:'TOP',   dir:new THREE.Vector3( 0, 0, 1)}, // +Z face, visible from above (Z-up)
+  {text:'BTM',   dir:new THREE.Vector3( 0, 0,-1)}, // -Z face
 ];
-vcLabelData.forEach(({text,dir})=>{
-  const tc=document.createElement('canvas'); tc.width=64; tc.height=64;
-  const ctx=tc.getContext('2d');
-  ctx.fillStyle='rgba(0,0,0,0)'; ctx.fillRect(0,0,64,64);
-  ctx.fillStyle='#c8d8ff'; ctx.font='bold 14px monospace';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(text,32,32);
-  const tex=new THREE.CanvasTexture(tc);
-  const plane=new THREE.Mesh(
-    new THREE.PlaneGeometry(1.4,1.4),
-    new THREE.MeshBasicMaterial({map:tex,transparent:true,depthTest:false})
-  );
-  plane.position.copy(dir.clone().multiplyScalar(0.81));
-  plane.lookAt(dir.clone().multiplyScalar(10));
-  vcScene.add(plane);
-});
+
+let vcLabelPlanes=[];
+function buildVcLabels(textColor){
+  // Remove existing label planes
+  vcLabelPlanes.forEach(p=>vcScene.remove(p));
+  vcLabelPlanes=[];
+  vcLabelData.forEach(({text,dir})=>{
+    const tc=document.createElement('canvas'); tc.width=64; tc.height=64;
+    const ctx=tc.getContext('2d');
+    ctx.fillStyle='rgba(0,0,0,0)'; ctx.fillRect(0,0,64,64);
+    ctx.fillStyle=textColor; ctx.font='bold 14px monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(text,32,32);
+    const tex=new THREE.CanvasTexture(tc);
+    const plane=new THREE.Mesh(
+      new THREE.PlaneGeometry(1.4,1.4),
+      new THREE.MeshBasicMaterial({map:tex,transparent:true,depthTest:false})
+    );
+    plane.position.copy(dir.clone().multiplyScalar(0.81));
+    plane.lookAt(dir.clone().multiplyScalar(10));
+    vcScene.add(plane);
+    vcLabelPlanes.push(plane);
+  });
+}
+
+// Initial build — dark theme label color
+buildVcLabels('#c8d8ff');
+
+function updateViewCubeTheme(isLight){
+  const faceColors = isLight ? VC_COLORS_LIGHT : VC_COLORS_DARK;
+  vcFaceMats.forEach((mat,i)=>{ mat.color.setHex(faceColors[i]); });
+  vcWire.material.color.setHex(isLight ? 0xaabbee : 0x6688cc);
+  // Rebuild labels with theme-appropriate text colour
+  buildVcLabels(isLight ? '#1a1e50' : '#c8d8ff');
+}
 
 // Sync view cube rotation to main camera
 function updateViewCube(){
-  const spherical=new THREE.Spherical().setFromVector3(
-    camera.position.clone().sub(new THREE.Vector3(panX,panY,0))
-  );
-  vcCamera.position.setFromSpherical(new THREE.Spherical(4,spherical.phi,spherical.theta));
+  // Rebuild vcCamera position to match main camera, Z-up
+  const sp=Math.sin(phi),cp=Math.cos(phi),st=Math.sin(theta),ct=Math.cos(theta);
+  vcCamera.position.set(4*sp*st, 4*sp*ct, 4*cp);
   vcCamera.lookAt(0,0,0);
 }
 
 // Snap to standard views
 const vcViews={
-  front:  {theta:0,   phi:Math.PI/2},
-  back:   {theta:Math.PI, phi:Math.PI/2},
-  left:   {theta:-Math.PI/2, phi:Math.PI/2},
-  right:  {theta:Math.PI/2,  phi:Math.PI/2},
-  top:    {theta:0,   phi:0.01},
-  bottom: {theta:0,   phi:Math.PI-0.01}
+  front:  {theta:Math.PI,      phi:Math.PI/2}, // camera at -Y, looking at front
+  back:   {theta:0,            phi:Math.PI/2}, // camera at +Y, looking at back
+  left:   {theta:-Math.PI/2,   phi:Math.PI/2}, // camera at -X
+  right:  {theta: Math.PI/2,   phi:Math.PI/2}, // camera at +X
+  top:    {theta:0,            phi:0.01},       // camera above (+Z)
+  bottom: {theta:0,            phi:Math.PI-0.01} // camera below (-Z)
 };
 
 function snapToView(name){
@@ -5100,6 +5349,7 @@ const SEG_SECTIONS_KEY = 'stl_wand_seg_visibility';
 
 // Map of section IDs to display labels and accent colors
 const SEG_SECTION_META = {
+  modelcolor:   { label: 'Model Color',     color: 'var(--accent)' },
   segmentation: { label: 'Segmentation',    color: 'var(--accent)' },
   wand:         { label: 'Wand Tolerance',  color: 'var(--wand)'   },
   isolation:    { label: 'Isolation',       color: 'var(--accent)' },
@@ -5240,6 +5490,66 @@ initSegVisibility();
 
   // Init state
   goTo(0);
+})();
+
+// ══════════════════════════════════════════════
+// MODEL COLOR PICKER
+// ══════════════════════════════════════════════
+const MODEL_COLOR_KEY = 'stl_wand_model_color';
+
+function hexToInt(hex){ return parseInt(hex.replace('#',''),16); }
+function intToHex(n){ return '#'+n.toString(16).padStart(6,'0'); }
+
+(function initModelColor(){
+  const pick  = document.getElementById('model-color-pick');
+  const shine = document.getElementById('model-shininess');
+  const shineLbl = document.getElementById('lbl-model-shine');
+  if(!pick) return;
+
+  // Restore saved color
+  try{
+    const saved = JSON.parse(localStorage.getItem(MODEL_COLOR_KEY)||'null');
+    if(saved){
+      modelColor = hexToInt(saved.color||'#6688aa');
+      modelShininess = saved.shininess||35;
+      pick.value = saved.color||'#6688aa';
+      shine.value = modelShininess;
+      shineLbl.textContent = modelShininess;
+    }
+  }catch(e){}
+
+  function saveAndApply(){
+    modelColor = hexToInt(pick.value);
+    modelShininess = +shine.value;
+    applyModelColorToAll();
+    localStorage.setItem(MODEL_COLOR_KEY, JSON.stringify({color:pick.value, shininess:modelShininess}));
+    // update active swatch
+    document.querySelectorAll('.model-cp').forEach(b=>b.classList.toggle('active', b.dataset.c===pick.value));
+  }
+
+  pick.addEventListener('input', ()=>{
+    document.querySelectorAll('.model-cp').forEach(b=>b.classList.remove('active'));
+    saveAndApply();
+  });
+
+  shine.addEventListener('input', ()=>{
+    shineLbl.textContent = shine.value;
+    saveAndApply();
+  });
+
+  document.querySelectorAll('.model-cp').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      pick.value = btn.dataset.c;
+      document.querySelectorAll('.model-cp').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      saveAndApply();
+    });
+  });
+
+  // Set initial active swatch
+  document.querySelectorAll('.model-cp').forEach(b=>{
+    if(b.dataset.c === pick.value) b.classList.add('active');
+  });
 })();
 
 // ══════════════════════════════════════════════
@@ -5617,8 +5927,11 @@ function applyTheme(theme){
 
   // Update 3D renderer background
   if(scene){
-    scene.background = new THREE.Color(isLight ? 0xEDF2F4 : 0x07070f);
+    scene.background = new THREE.Color(isLight ? 0xe3e4e8 : 0x07070f);
   }
+
+  // Update view cube colours and labels
+  if(typeof updateViewCubeTheme === 'function') updateViewCubeTheme(isLight);
 
   // Swap toolbar icons
   document.getElementById('theme-icon-dark').style.display  = isLight ? 'none' : '';
