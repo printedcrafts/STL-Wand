@@ -389,6 +389,12 @@ input[type=range]:disabled{opacity:.35;pointer-events:none;}
 .ci.face-sel .ci-dot{background:var(--wand);box-shadow:0 0 5px var(--wand);}
 .ci.face-sel.sel{background:rgba(255,102,0,.14);}
 .ci.iso-hidden{opacity:.28;}
+.ci.hov{background:rgba(0,255,200,.08);border-left:2px solid var(--hov);}
+.ci.hov .ci-dot{background:var(--hov);}
+.ci.hov .ci-name{color:var(--hov);}
+[data-theme="light"] .ci.hov{background:rgba(6,95,70,.07);border-left-color:var(--hov);}
+[data-theme="light"] .ci.hov .ci-dot{background:var(--hov);}
+[data-theme="light"] .ci.hov .ci-name{color:var(--hov);}
 /* checkbox */
 .ci-cb{width:13px;height:13px;flex-shrink:0;cursor:pointer;accent-color:var(--sel);}
 .ci-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--text-dim);}
@@ -1154,8 +1160,7 @@ body.move.dragging #canvas{cursor:grabbing;}
         No parts selected — drag moves the whole model.
       </div>
       <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.5;margin-bottom:6px;">
-        <strong style="color:var(--move);">LMB DRAG</strong> = X/Z plane &nbsp;|&nbsp;
-        <strong style="color:var(--move);">SHIFT+DRAG</strong> = vertical (Y)
+        <strong style="color:var(--move);">LMB DRAG</strong> = freely on X/Y plane
       </div>
       <div class="move-coord-row">
         <div class="move-coord">
@@ -1228,6 +1233,14 @@ body.move.dragging #canvas{cursor:grabbing;}
       <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.6;margin-bottom:6px;">Each part saved as its own .stl, bundled in a .zip.</div>
       <button class="action-btn export-all" id="btn-export-all" disabled>⬇ EXPORT ALL PARTS</button>
       <button class="action-btn export-sel" id="btn-export-sel" disabled style="margin-top:4px;">⬇ EXPORT SELECTED</button>
+      <div class="orient-divider" style="margin:10px 0 8px;"></div>
+      <div style="font-family:var(--ff-mono);font-size:10px;color:var(--text-label);line-height:1.5;margin-bottom:6px;">
+        Merge all visible parts into a single STL — includes any deletions made during editing.
+      </div>
+      <button class="action-btn" id="btn-export-merged" disabled
+        style="background:rgba(167,139,250,.08);border-color:var(--export);color:var(--export);margin-top:0;">
+        ⬇ EXPORT MERGED (SINGLE STL)
+      </button>
     </div>
 
     <!-- Tips -->
@@ -1292,6 +1305,15 @@ body.move.dragging #canvas{cursor:grabbing;}
       </div>
       <!-- Parts list -->
       <div class="clist" id="clist"></div>
+      <!-- Wand hover: select connected group -->
+      <div id="rp-conn-row" style="padding:4px 8px;display:block;">
+        <button id="rp-conn-btn" style="
+          display:none;width:100%;height:26px;
+          background:rgba(0,255,200,.08);border:1px solid rgba(0,255,200,.35);
+          color:var(--hov);font-family:var(--ff-mono);font-size:10px;letter-spacing:.06em;
+          cursor:pointer;transition:all .15s;
+        ">⊕ SELECT CONNECTED</button>
+      </div>
       <!-- Action bar (shown when selection active) -->
       <div class="rp-action-bar" id="rp-action-bar">
         <button class="rp-del-btn" id="rp-del-btn">🗑 DELETE SELECTED (<span id="rp-del-ct">0</span>)</button>
@@ -1696,8 +1718,7 @@ body.move.dragging #canvas{cursor:grabbing;}
 
         <div class="help-h2 move">Translate / Move  (M)</div>
         <div class="help-p">Switch to Move mode using the <strong>MOVE</strong> button or press M.</div>
-        <div class="help-krow"><span class="help-key">LMB DRAG</span><span class="help-kdesc">Slides the model (or selected parts) along the X/Z ground plane.</span></div>
-        <div class="help-krow"><span class="help-key">SHIFT+DRAG</span><span class="help-kdesc">Moves vertically on the Y axis.</span></div>
+        <div class="help-krow"><span class="help-key">LMB DRAG</span><span class="help-kdesc">Moves the model (or selected parts) freely on the X/Y ground plane. No modifier key required.</span></div>
         <div class="help-krow"><span class="help-key">GIZMO HANDLES</span><span class="help-kdesc">Drag the red/green/blue axis handles for constrained single-axis movement.</span></div>
         <div class="help-krow"><span class="help-key">TO GROUND</span><span class="help-kdesc">Snaps the lowest vertex of the selection to Y = 0.</span></div>
 
@@ -2022,6 +2043,74 @@ function meshToSTLBuffer(mesh,centerOrigin){
   return buf;
 }
 
+// ── Merge all visible meshes into one binary STL ──────────────────────────
+// Applies world transform of each mesh so parts moved/rotated
+// stay in their correct relative positions in the merged file.
+function mergeMeshesToSTLBuffer(targetMeshes, centerOrigin){
+  // Count total triangles across all target meshes
+  const totalF = targetMeshes.reduce((s,m)=>s + m.geometry.attributes.position.array.length/9, 0);
+  if(!totalF) return null;
+
+  // Optionally compute overall centroid for centering
+  let cx=0,cy=0,cz=0;
+  if(centerOrigin){
+    let count=0;
+    targetMeshes.forEach(m=>{
+      const pa=m.geometry.attributes.position.array;
+      const wm=m.matrixWorld;
+      for(let i=0;i<pa.length;i+=3){
+        const v=new THREE.Vector3(pa[i],pa[i+1],pa[i+2]).applyMatrix4(wm);
+        cx+=v.x; cy+=v.y; cz+=v.z; count++;
+      }
+    });
+    cx/=count; cy/=count; cz/=count;
+  }
+
+  const buf = new ArrayBuffer(80 + 4 + totalF*50);
+  const view = new DataView(buf);
+  new Uint8Array(buf,0,80).set(new TextEncoder().encode('Binary STL — STL Wand Editor (merged)'));
+  view.setUint32(80, totalF, true);
+
+  let off = 84;
+  targetMeshes.forEach(mesh=>{
+    const pa = mesh.geometry.attributes.position.array;
+    const na = mesh.geometry.attributes.normal ? mesh.geometry.attributes.normal.array : null;
+    const wm = mesh.matrixWorld;
+    // Normal matrix (inverse-transpose) for transforming normals correctly
+    const nm = new THREE.Matrix3().getNormalMatrix(wm);
+    const F  = pa.length/9;
+
+    for(let f=0;f<F;f++){
+      const b=f*9;
+      // Transform vertices to world space
+      const vA=new THREE.Vector3(pa[b  ],pa[b+1],pa[b+2]).applyMatrix4(wm);
+      const vB=new THREE.Vector3(pa[b+3],pa[b+4],pa[b+5]).applyMatrix4(wm);
+      const vC=new THREE.Vector3(pa[b+6],pa[b+7],pa[b+8]).applyMatrix4(wm);
+
+      // Compute or transform normal
+      let nx,ny,nz;
+      if(na){
+        const n=new THREE.Vector3(na[b],na[b+1],na[b+2]).applyMatrix3(nm).normalize();
+        nx=n.x; ny=n.y; nz=n.z;
+      } else {
+        const ex=vB.x-vA.x,ey=vB.y-vA.y,ez=vB.z-vA.z;
+        const fx=vC.x-vA.x,fy=vC.y-vA.y,fz=vC.z-vA.z;
+        nx=ey*fz-ez*fy; ny=ez*fx-ex*fz; nz=ex*fy-ey*fx;
+        const l=Math.sqrt(nx*nx+ny*ny+nz*nz)||1; nx/=l; ny/=l; nz/=l;
+      }
+
+      // Write normal
+      view.setFloat32(off,   nx,true); view.setFloat32(off+4, ny,true); view.setFloat32(off+8, nz,true); off+=12;
+      // Write 3 vertices (subtract centroid if centering)
+      view.setFloat32(off,   vA.x-cx,true); view.setFloat32(off+4, vA.y-cy,true); view.setFloat32(off+8, vA.z-cz,true); off+=12;
+      view.setFloat32(off,   vB.x-cx,true); view.setFloat32(off+4, vB.y-cy,true); view.setFloat32(off+8, vB.z-cz,true); off+=12;
+      view.setFloat32(off,   vC.x-cx,true); view.setFloat32(off+4, vC.y-cy,true); view.setFloat32(off+8, vC.z-cz,true); off+=12;
+      view.setUint16(off, 0, true); off+=2;
+    }
+  });
+  return buf;
+}
+
 // ══════════════════════════════════════════════
 // THREE.JS SCENE
 // ══════════════════════════════════════════════
@@ -2294,37 +2383,29 @@ canvas.addEventListener('mousedown',e=>{
       startGizmoDrag(e, gizmoHit);
       e.preventDefault(); return;
     }
-    const isVertical = e.shiftKey;
-    const movingParts = selSet.size > 0;  // true = move selected parts, false = move whole model
+    const movingParts = selSet.size > 0;
 
-    // Choose reference position for plane construction
+    // Drag plane is always the XY ground plane (Z=0 in Z-up world)
     const refPos = movingParts
       ? (() => { const c=new THREE.Vector3(); selSet.forEach(m=>c.add(m.position)); c.divideScalar(selSet.size); return c; })()
       : group.position;
 
-    if(isVertical){
-      const camDir=new THREE.Vector3();
-      camera.getWorldDirection(camDir); camDir.y=0; camDir.normalize();
-      moveDragPlane.normal.copy(camDir);
-      moveDragPlane.constant=-refPos.dot(camDir);
-    } else {
-      moveDragPlane.normal.set(0,0,1);
-      moveDragPlane.constant = movingParts ? -refPos.z : -group.position.z;
-    }
+    moveDragPlane.normal.set(0,0,1);
+    moveDragPlane.constant = movingParts ? -refPos.z : -group.position.z;
+
     const ray=new THREE.Raycaster();
     ray.setFromCamera(toNDC(e),camera);
     const pt=new THREE.Vector3();
     if(ray.ray.intersectPlane(moveDragPlane,pt)){
       moveDragStart.copy(pt);
       if(movingParts){
-        // Store each selected mesh's start position
         partMoveStarts.clear();
         selSet.forEach(m=>partMoveStarts.set(m,m.position.clone()));
       } else {
         moveGroupStart.copy(group.position);
       }
       moveIsDragging=true;
-      moveIsDraggingVertical=isVertical;
+      moveIsDraggingVertical=false; // never vertical via drag — use Z slider
       document.body.classList.add('dragging');
     }
   }
@@ -2353,35 +2434,18 @@ canvas.addEventListener('mousemove',e=>{
         const movingParts = partMoveStarts.size > 0;
 
         if(movingParts){
-          // Move each selected part individually
+          // Move each selected part on XY plane
           partMoveStarts.forEach((startPos,m)=>{
-            if(moveIsDraggingVertical){
-              m.position.set(startPos.x, startPos.y, startPos.z + delta.z);
-            } else {
-              m.position.set(startPos.x + delta.x, startPos.y, startPos.z + delta.z);
-            }
+            m.position.set(startPos.x + delta.x, startPos.y + delta.y, startPos.z);
           });
-          // Update coord display from average position of selected parts
           const avg=new THREE.Vector3();
           selSet.forEach(m=>avg.add(m.position)); avg.divideScalar(selSet.size);
           document.getElementById('mv-x').textContent=avg.x.toFixed(2);
           document.getElementById('mv-y').textContent=avg.y.toFixed(2);
           document.getElementById('mv-z').textContent=avg.z.toFixed(2);
-          if(moveIsDraggingVertical){
-            const slY=document.getElementById('sl-mv-y');
-            slY.value=Math.max(-500,Math.min(500,avg.y - moveOriginPos.y));
-            document.getElementById('lbl-mv-y').textContent=avg.y.toFixed(2);
-          }
         } else {
-          // Move whole group
-          if(moveIsDraggingVertical){
-            group.position.set(moveGroupStart.x, moveGroupStart.y+delta.y, moveGroupStart.z);
-            const yVal=group.position.y-moveOriginPos.y;
-            document.getElementById('sl-mv-y').value=Math.max(-500,Math.min(500,yVal));
-            document.getElementById('lbl-mv-y').textContent=group.position.y.toFixed(2);
-          } else {
-            group.position.set(moveGroupStart.x+delta.x, moveGroupStart.y, moveGroupStart.z+delta.z);
-          }
+          // Move whole group on XY plane
+          group.position.set(moveGroupStart.x+delta.x, moveGroupStart.y+delta.y, moveGroupStart.z);
           updateMoveCoords();
         }
       }
@@ -2439,7 +2503,7 @@ canvas.addEventListener('mouseup',e=>{
           for(let i=0;i<pa.count;i++) pa.setXYZ(i,pa.getX(i)+dx,pa.getY(i)+dy,pa.getZ(i)+dz);
           pa.needsUpdate=true; m.geometry.computeBoundingSphere();
           m.position.sub(new THREE.Vector3(dx,dy,dz));
-          faceAdjCache.delete(m); faceNormCache.delete(m);
+          faceAdjCache.delete(m); faceNormCache.delete(m); connCache.delete(m);
         }
         group.position.copy(moveOriginPos);
         syncRawFromMeshes();
@@ -2503,6 +2567,63 @@ function toNDC(e){const r=canvas.getBoundingClientRect();return{x:((e.clientX-r.
 // ══════════════════════════════════════════════
 // HOVER / WAND / BOX
 // ══════════════════════════════════════════════
+// ── hovMesh tracks which mesh the wand is over ────────────────────────────
+// connectedMeshes: Set of meshes that share vertices with hovMesh
+// (built once per hovMesh, cleared when hovMesh changes)
+let connectedMeshes = new Set();
+const connCache = new Map(); // mesh → Set<mesh> of connected neighbours
+
+function getConnectedMeshes(target){
+  if(connCache.has(target)) return connCache.get(target);
+  const result = new Set();
+  if(!target || meshes.length < 2){ connCache.set(target, result); return result; }
+
+  // Build quantised vertex key set for target
+  const pa0 = target.geometry.attributes.position.array;
+  const keys = new Set();
+  for(let i=0;i<pa0.length;i+=3){
+    keys.add(`${Math.round(pa0[i]*1e3)},${Math.round(pa0[i+1]*1e3)},${Math.round(pa0[i+2]*1e3)}`);
+  }
+
+  // Check every other visible mesh
+  for(const m of meshes){
+    if(m === target || hiddenSet.has(m)) continue;
+    const pa = m.geometry.attributes.position.array;
+    for(let i=0;i<pa.length;i+=3){
+      const k=`${Math.round(pa[i]*1e3)},${Math.round(pa[i+1]*1e3)},${Math.round(pa[i+2]*1e3)}`;
+      if(keys.has(k)){ result.add(m); break; }
+    }
+  }
+  connCache.set(target, result);
+  return result;
+}
+
+// Highlight the row for a given mesh without a full buildList rebuild
+function highlightHovRow(mesh){
+  // Remove previous hov highlight
+  document.querySelectorAll('.ci.hov').forEach(el=>el.classList.remove('hov'));
+  document.getElementById('rp-conn-btn').style.display='none';
+  if(!mesh) return;
+
+  const idx = meshes.indexOf(mesh);
+  if(idx<0) return;
+  // Find the row with this mesh index and add .hov
+  const row = document.querySelector(`.ci[data-mesh-idx="${idx}"]`);
+  if(row){
+    row.classList.add('hov');
+    // Scroll into view if not visible (softly)
+    row.scrollIntoView({block:'nearest',behavior:'smooth'});
+  }
+
+  // Show "SELECT CONNECTED" button if this mesh has neighbours
+  connectedMeshes = getConnectedMeshes(mesh);
+  if(connectedMeshes.size > 0){
+    const btn = document.getElementById('rp-conn-btn');
+    btn.style.display='';
+    btn.textContent=`⊕ SELECT CONNECTED (${connectedMeshes.size + 1})`;
+  }
+}
+
 function doHover(e){
   if(!meshes.length)return;
   raycaster.setFromCamera(toNDC(e),camera);
@@ -2513,6 +2634,7 @@ function doHover(e){
   if(hovMesh&&!selSet.has(hovMesh))hovMesh.material=hovMesh.userData.mat;
   hovMesh=m;
   if(hovMesh&&!selSet.has(hovMesh))hovMesh.material=MAT_HOV;
+  if(toolMode==='wand') highlightHovRow(hovMesh);
 }
 // ══════════════════════════════════════════════
 // FACE-LEVEL MAGIC WAND ENGINE
@@ -2692,7 +2814,7 @@ function rebuildOverlay(mesh){
 
 // Clear all face selections and overlays
 function clearFaceSel(){
-  for(const [mesh] of faceSelections) rebuildOverlay(mesh); // removes overlays
+  for(const [mesh] of faceSelections) rebuildOverlay(mesh);
   faceSelections.clear();
 }
 
@@ -2702,6 +2824,8 @@ function totalFaceSelCount(){
   for(const s of faceSelections.values()) n+=s.size;
   return n;
 }
+
+// ── Hover + connected-part detection — see doHover ──
 
 // Face-level flood fill on a single mesh
 // seedFace: face index clicked
@@ -3221,7 +3345,7 @@ function moveToGround(){
     for(let i=0;i<pa.count;i++) pa.setZ(i, pa.getZ(i)+dz);
     pa.needsUpdate = true;
     m.geometry.computeBoundingSphere();
-    faceAdjCache.delete(m); faceNormCache.delete(m);
+    faceAdjCache.delete(m); faceNormCache.delete(m); connCache.delete(m);
     // Reset per-part origin since geometry moved
     partMoveOrigins.set(m, m.position.clone());
   });
@@ -3266,7 +3390,7 @@ function bakeMoveOffset(){
       }
       pa.needsUpdate=true;
       m.geometry.computeBoundingSphere();
-      faceAdjCache.delete(m); faceNormCache.delete(m);
+      faceAdjCache.delete(m); faceNormCache.delete(m); connCache.delete(m);
       m.position.set(0,0,0);
       partMoveOrigins.set(m,new THREE.Vector3(0,0,0));
       bakedCount++;
@@ -3324,7 +3448,7 @@ function syncRawFromMeshes(){
   rawPos=newPos;
   rawNrm=newNrm;
   // Invalidate face caches since geometry changed
-  for(const m of meshes){ faceAdjCache.delete(m); faceNormCache.delete(m); }
+  for(const m of meshes){ faceAdjCache.delete(m); faceNormCache.delete(m); connCache.delete(m); }
 }
 
 // ══════════════════════════════════════════════
@@ -3497,6 +3621,7 @@ async function loadSTL(file){
     if(group){ scene.remove(group); group=null; }
     meshes=[];selSet.clear();hiddenSet.clear();hovMesh=null;undoStk=[];
     rawPos=null;rawNrm=null;
+    connCache.clear(); connectedMeshes.clear();
     explodeAmount=0;explodeOffsets=[];
     resetTriExplode();
     orientAngles={x:0,y:0,z:0};orientBaked=false;
@@ -3705,7 +3830,17 @@ function openExportModal(preselect){
   document.getElementById('modal-go').disabled=false;
   document.getElementById('export-modal').classList.add('on');
 }
-document.getElementById('modal-sel-all').onclick=()=>document.querySelectorAll('#modal-part-list input').forEach(c=>c.checked=true);
+document.getElementById('rp-conn-btn').addEventListener('click', ()=>{
+  if(!hovMesh) return;
+  // Select hovMesh + all connected neighbours
+  clearSel();
+  doSelect(hovMesh);
+  connectedMeshes.forEach(m=>doSelect(m));
+  document.getElementById('rp-conn-btn').style.display='none';
+  document.querySelectorAll('.ci.hov').forEach(el=>el.classList.remove('hov'));
+  refreshUI();
+  setStatus(`Selected ${selSet.size} connected part${selSet.size!==1?'s':''}.`);
+});
 document.getElementById('modal-sel-none').onclick=()=>document.querySelectorAll('#modal-part-list input').forEach(c=>c.checked=false);
 
 async function doExport(){
@@ -3774,6 +3909,7 @@ function refreshUI(){
   document.getElementById('btn-export').disabled=!has;
   document.getElementById('btn-export-all').disabled=!has;
   document.getElementById('btn-export-sel').disabled=sc===0;
+  document.getElementById('btn-export-merged').disabled=!has;
   document.getElementById('btn-ai').disabled=!has;
   document.getElementById('btn-explode-full').disabled=!has;
   document.getElementById('btn-explode-reset').disabled=!has;
@@ -4080,7 +4216,11 @@ function setTool(t){
   else if(t==='box'){document.getElementById('btn-box').classList.add('warn-active');me.style.color='var(--warn)';}
   else if(t==='move'){document.getElementById('btn-move').classList.add('active');me.style.color='var(--move)';}
   me.textContent=t==='orbit'?'ORBIT':t==='wand'?'WAND SELECT':t==='box'?'BOX SELECT':'MOVE';
-  if(t!=='wand'&&hovMesh&&!selSet.has(hovMesh)){hovMesh.material=hovMesh.userData.mat;hovMesh=null;}
+  if(t!=='wand'&&hovMesh&&!selSet.has(hovMesh)){
+    hovMesh.material=hovMesh.userData.mat;hovMesh=null;
+    document.querySelectorAll('.ci.hov').forEach(el=>el.classList.remove('hov'));
+    document.getElementById('rp-conn-btn').style.display='none';
+  }
   if(t!=='move'){ gizmoGroup.visible=false; }
   else { updateGizmoPosition(); }
   const h=document.getElementById('hints');
@@ -4090,7 +4230,7 @@ function setTool(t){
   if(t==='orbit')  hItems='<div class="hi"><span>LMB</span> ORBIT</div><div class="hi"><span>RMB</span> PAN</div><div class="hi"><span>SCROLL</span> ZOOM</div><div class="hi"><span>W</span> WAND</div><div class="hi"><span>B</span> BOX</div><div class="hi"><span>M</span> MOVE</div>';
   else if(t==='wand') hItems='<div class="hi"><span>CLICK</span> SELECT</div><div class="hi"><span>SHIFT+CLICK</span> ADD TRI</div><div class="hi"><span>SHIFT+DRAG</span> PAINT TRIS</div><div class="hi"><span>CTRL+CLICK</span> TOGGLE</div><div class="hi"><span>DEL</span> DELETE</div>';
   else if(t==='box')  hItems='<div class="hi"><span class="w">DRAG</span> BOX SELECT</div><div class="hi"><span>SHIFT</span> ADD</div><div class="hi"><span>DEL</span> DELETE TRI</div><div class="hi"><span>W</span> WAND</div><div class="hi"><span>O</span> ORBIT</div>';
-  else if(t==='move') hItems='<div class="hi"><span>LMB DRAG</span> SLIDE ON GRID</div><div class="hi"><span>SHIFT+DRAG</span> VERTICAL</div><div class="hi"><span>GIZMO</span> AXIS MOVE</div><div class="hi"><span>O</span> ORBIT</div>';
+  else if(t==='move') hItems='<div class="hi"><span>LMB DRAG</span> MOVE ON XY</div><div class="hi"><span>GIZMO</span> AXIS CONSTRAIN</div><div class="hi"><span>Z SLIDER</span> LIFT/LOWER</div><div class="hi"><span>O</span> ORBIT</div>';
   // Remove all non-handle children then append new items
   const handle=h.querySelector('.hud-drag-handle');
   h.innerHTML='';
@@ -4139,6 +4279,37 @@ document.getElementById('btn-showall').onclick=doShowAll;
 document.getElementById('btn-export').onclick=()=>openExportModal(selSet.size>0);
 document.getElementById('btn-export-all').onclick=()=>openExportModal(false);
 document.getElementById('btn-export-sel').onclick=()=>openExportModal(true);
+
+// ── Merge & Export ────────────────────────────────────────────────────────
+document.getElementById('btn-export-merged').addEventListener('click', async ()=>{
+  if(!meshes.length){ alert('No parts to merge.'); return; }
+  const btn = document.getElementById('btn-export-merged');
+  const visible = meshes.filter(m=>!hiddenSet.has(m));
+  if(!visible.length){ alert('All parts are hidden — show at least one part to export.'); return; }
+
+  const prefix = (loadedFileName||'model').replace(/[^a-zA-Z0-9_\-]/g,'_');
+  const centerOrigin = false; // keep world positions intact
+
+  btn.disabled=true;
+  btn.textContent='⟳ MERGING…';
+
+  // yield to let UI update
+  await tick(20);
+
+  try{
+    const buf = mergeMeshesToSTLBuffer(visible, centerOrigin);
+    if(!buf){ alert('Merge failed — no geometry found.'); return; }
+    const totalTri = visible.reduce((s,m)=>s+m.geometry.attributes.position.array.length/9,0);
+    downloadBuffer(buf, `${prefix}_merged.stl`, 'application/octet-stream');
+    setStatus(`Merged ${visible.length} part${visible.length!==1?'s':''} → ${totalTri.toLocaleString()} triangles exported as ${prefix}_merged.stl`);
+  } catch(e){
+    console.error('Merge export error:', e);
+    alert('Merge failed: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.textContent='⬇ EXPORT MERGED (SINGLE STL)';
+  }
+});
 document.getElementById('btn-move-reset').onclick=resetMove;
 document.getElementById('btn-move-ground').onclick=moveToGround;
 document.getElementById('sl-mv-y').addEventListener('input',function(){
@@ -4284,7 +4455,7 @@ document.getElementById('btn-reseg').onclick=()=>{if(!rawPos){document.getElemen
 // Load
 document.getElementById('btn-load').onclick=()=>{
   if(group){
-    scene.remove(group);group=null;meshes=[];selSet.clear();hiddenSet.clear();hovMesh=null;undoStk=[];rawPos=null;rawNrm=null;explodeAmount=0;explodeOffsets=[];orientAngles={x:0,y:0,z:0};orientBaked=false;moveOffset.set(0,0,0);
+    scene.remove(group);group=null;meshes=[];selSet.clear();hiddenSet.clear();hovMesh=null;undoStk=[];rawPos=null;rawNrm=null;explodeAmount=0;explodeOffsets=[];orientAngles={x:0,y:0,z:0};orientBaked=false;moveOffset.set(0,0,0);connCache.clear();connectedMeshes.clear();
     listSort='index';
     document.getElementById('rp-sort').value='index';
     document.getElementById('dropzone').style.display='';
@@ -4296,7 +4467,7 @@ document.getElementById('btn-load').onclick=()=>{
     document.getElementById('orient-badge').classList.remove('on');
     ['sv-comp','sv-tri'].forEach(id=>document.getElementById(id).textContent='—');
     document.getElementById('sv-sel').textContent='0';
-    ['btn-delete','btn-undo','btn-isolate','btn-showall','btn-export','btn-export-all','btn-export-sel','btn-explode-full','btn-explode-reset'].forEach(id=>document.getElementById(id).disabled=true);
+    ['btn-delete','btn-undo','btn-isolate','btn-showall','btn-export','btn-export-all','btn-export-sel','btn-export-merged','btn-explode-full','btn-explode-reset'].forEach(id=>document.getElementById(id).disabled=true);
     document.getElementById('sl-explode').disabled=true;document.getElementById('sl-explode').value=0;
     document.getElementById('lbl-explode').textContent='0%';
     document.getElementById('lp-ct').textContent='';
@@ -4957,7 +5128,7 @@ function autoBakeParts(targetMeshes){
     for(let i=0;i<pa.count;i++) pa.setXYZ(i,pa.getX(i)+dx,pa.getY(i)+dy,pa.getZ(i)+dz);
     pa.needsUpdate=true;
     m.geometry.computeBoundingSphere();
-    faceAdjCache.delete(m); faceNormCache.delete(m);
+    faceAdjCache.delete(m); faceNormCache.delete(m); connCache.delete(m);
     m.position.set(0,0,0);
     partMoveOrigins.set(m,new THREE.Vector3(0,0,0));
   });
